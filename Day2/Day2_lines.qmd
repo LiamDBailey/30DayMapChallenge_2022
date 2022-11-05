@@ -1,0 +1,199 @@
+---
+title: "Day 2 - Lines"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(ggplot2) # For plotting
+library(dplyr) # Data wrangling
+library(showtext) # Custom fonts
+library(cowplot) # For combining plot and insets/text
+library(ggtext) # Markdown text
+library(htmltools) # Custom font styles
+library(osmdata) # OSM data
+library(geodata) # To get elevation data
+library(stars) # Working with raster data
+library(ggridges) # To make ridge plot
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## https://fonts.adobe.com/fonts/xenara
+sysfonts::font.add(family = "Xenara",
+                   regular = "Xenara_regular.otf",
+                   bold = "Xenara_bold.otf")
+```
+
+```{r}
+# Load detailed state boundary data
+states <- rnaturalearthhires::states10
+```
+
+```{r}
+# Load detailed elevation data from around Canberra
+elev <- geodata::elevation_3s(lon = 149.128998, lat = -35.282001,
+                              path = here::here("Day2"))
+```
+
+Isolate ACT as an sf object
+
+```{r}
+ACT <- states %>% 
+  sf::st_as_sf() %>% 
+  filter(name == "Australian Capital Territory") 
+```
+
+Extract bounding area of the polygon
+
+```{r}
+(ACT_bbox <- sf::st_bbox(ACT))
+```
+
+Create lines across ACT at evenly spaced latitudes
+
+```{r}
+ACT_lines <- seq(ACT_bbox$ymin, ACT_bbox$ymax, length.out = 60)
+```
+
+Turn these lines into sf objects
+
+```{r}
+ACT_lines_sf <- purrr::map(ACT_lines,
+           .f = ~{
+             pts <- matrix(c(ACT_bbox$xmin, ACT_bbox$xmax, .x, .x), ncol = 2)
+             line <- sf::st_linestring(pts, dim = "XY")
+           }) %>% 
+  sf::st_as_sfc(crs = "EPSG:4326")
+
+ggplot() +
+  geom_sf(data = ACT_lines_sf) +
+  geom_sf(data = ACT) +
+  theme_void()
+```
+
+Convert these lines into points at even spaces (where we can extract elevation)
+
+```{r}
+ACT_pts_sf <- ACT_lines_sf %>% 
+  sf::st_segmentize(dfMaxLength = 500) %>% 
+  sf::st_as_sf() %>% 
+  sf::st_cast(to = "POINT") %>% 
+  sf::st_filter(ACT)
+
+ggplot() +
+  geom_sf(data = ACT) +
+  geom_sf(data = ACT_pts_sf, size = 0.1) +
+  theme_void()
+```
+
+Convert raster to stars (works better with sf objects)
+
+```{r}
+elev_stars <- stars::st_as_stars(elev)
+```
+
+Extract elevation information at each point
+
+```{r}
+ACT_pts_elev <- ACT_pts_sf %>% 
+  dplyr::bind_cols(stars::st_extract(elev_stars, at = .) %>% sf::st_drop_geometry()) %>% 
+  dplyr::bind_cols(sf::st_coordinates(.)) %>% 
+  mutate(Y = round(Y, 2),
+         elev = srtm_66_20.tif - min(srtm_66_20.tif))
+```
+
+Location of Canberra to add as a point.
+
+```{r}
+canberra <- data.frame(X = 149.1245965, Y = -35.2878983)
+```
+
+Download border of Namadgi NP from OSM
+
+```{r}
+ACT_bbox <- getbb(place_name = "Australian Capital Territory, Australia")
+allnature <- opq(bbox = ACT_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'leisure', value = 'nature_reserve') %>% 
+  osmdata_sf()
+
+namadgi <- allnature$osm_multipolygons %>% 
+  filter(name == "Namadgi National Park")
+```
+
+Subset points that are within Namadgi
+
+```{r}
+namadgi_pts <- ACT_pts_elev %>% 
+  sf::st_filter(namadgi)
+```
+
+Create ridgeplot/joyplot
+
+```{r}
+forest_colour <- "#228B22"
+
+baseplot <- ggplot() +
+  geom_density_ridges(data = ACT_pts_elev, aes(x = X, y = Y, height = elev, group = Y),
+                 colour = "white", fill = "black",
+                 stat = "identity", scale = 8,
+                 size = 0.25) +
+  geom_density_ridges(data = namadgi_pts, aes(x = X, y = Y, height = elev, group = Y),
+                 colour = forest_colour, fill = "black",
+                 stat = "identity", scale = 8,
+                 size = 0.25) +
+  geom_segment(data = canberra,
+               aes(x = X, xend = X, y = Y, yend = Y + 0.2),
+               size = 0.25, colour = "white") +
+  geom_segment(data = canberra,
+               aes(x = X, xend = X + 0.15, y = Y + 0.2, yend = Y + 0.2),
+               size = 0.25, colour = "white") +
+  geom_richtext(data = canberra,
+                aes(x = X + 0.05, y = Y + 0.23),
+                label = "CANBERRA", hjust = 0, size = 5,
+                colour = "white",
+                fill = NA, label.colour = NA,
+                family = "Xenara", fontface = "bold") +
+  geom_point(data = canberra,
+               aes(x = X, y = Y),
+               size = 3, colour = "white") +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "black"),
+        panel.background = element_rect(fill = "black"),
+        plot.margin = margin(t = 30, b = 30,
+                             l = 30, r = 30))
+```
+
+```{r}
+namadgi_fn <- function(...) span(..., style = css(color = forest_colour))
+
+ggdraw() +
+  draw_plot(baseplot) +
+  geom_richtext(aes(x = 0.625, y = 0.425),
+                label = paste0("The Australian Capital Territory<br>is home to Australia's capital, Canberra.<br>The ACT is only 2300km^2 but alot<br>of that space is mountainous<br>", namadgi_fn("Namadgi National Park.")),
+                label.colour = NA, fill = NA,
+                colour = "white", family = "Xenara",
+                hjust = 0, size = 3) +
+  labs(title = "Australian Capital Territory",
+       subtitle = "Elevation map",
+       caption = "Plot: @ldbailey255 | Data: SRTM 3s elevation data") +
+  theme_void() +
+  theme(plot.title = element_markdown(colour = "white",
+                                      family = "Xenara", size = 25,
+                                      face = "bold",
+                                      margin = margin(t = 20, l = 20)),
+        plot.subtitle = element_markdown(colour = "white",
+                                      family = "Xenara", size = 15,
+                                      margin = margin(t = 5, l = 20,
+                                                      b = -10)),
+        plot.caption = element_markdown(colour = "white",
+                                        family = "Xenara", size = 5,
+                                        margin = margin(b = 5, r = 5)),
+        panel.background = element_rect(colour = NA, fill = "black"),
+        plot.background = element_rect(colour = NA, fill = "black"))
+
+ggsave(here::here("./Day2/Day2_lines.png"), dpi = 600,
+       height = 5, width = 8)
+```

@@ -1,0 +1,111 @@
+---
+title: "Day3_polygons"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial data
+library(showtext) # Custom fonts
+library(rnaturalearth) # For country borders
+library(ggfx) # Add glow around borders
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## https://fonts.adobe.com/fonts/dolly
+sysfonts::font_add(family = "Dolly",
+                   regular = "DollyPro1.otf")
+sysfonts::font_add(family = "Quicksand",
+                   regular = "Quicksand-VariableFont_wght.ttf",
+                   bold = "Quicksand-SemiBold.ttf")
+sysfonts::font.add(family = "Xenara",
+                   regular = "Xenara_regular.otf",
+                   bold = "Xenara_bold.otf")
+```
+
+Load country and tectonic plate data
+
+```{r}
+countries <- rnaturalearth::countries110 %>% 
+  sf::st_as_sf()
+
+#Tectonic plate data from
+#https://github.com/fraxen/tectonicplates
+plate_poly <- sf::read_sf(here::here("Day3/PB2002_plates.shp"))
+plate_line  <- sf::read_sf(here::here("Day3/PB2002_boundaries.shp"))
+```
+
+Convert to chosen projection (possible options are shown)
+
+```{r}
+## Molleweide
+# my_crs <- "ESRI:54009"
+
+## Eckert IV
+# my_crs <- "ESRI:54012"
+
+## Times
+# my_crs <- "ESRI:54048"
+
+## Wagner VII
+# my_crs <- "ESRI:54076"
+
+## Behrmann
+my_crs <- "ESRI:54017"
+
+countries_tr <- countries %>% 
+  sf::st_transform(my_crs)
+
+plate_poly_tr <- plate_poly %>% 
+  sf::st_transform(my_crs)
+
+#Combine and simplify tectonic boundaries
+plate_line_tr <- plate_line %>% 
+  sf::st_simplify(dTolerance = 60000) %>% 
+  sf::st_union() %>% 
+  sf::st_transform(my_crs)
+```
+
+Plot
+
+```{r}
+baseplot <- ggplot() +
+  geom_sf(data = countries_tr, fill = "grey70", colour = "black",
+          size = 0.15) +
+  geom_sf(data = plate_poly_tr, fill = "black", alpha = 0.65, colour = NA) +
+  with_outer_glow(
+    geom_sf(data = plate_line_tr,
+            colour = "red", alpha = 0.25,
+            size = 0.75),
+    colour = "red",
+    sigma = 2,
+    expand = 15
+  ) +
+  geom_sf(data = plate_line_tr,
+          colour = "red", alpha = 0.75,
+          size = 0.15) +
+  geom_richtext(aes(x = 10402668, y = -7000000),
+                label = "Plot: @ldbailey255 | Data: Hugo Ahlenius, Nordpil and Peter Bird",
+                size = 1, colour = "white", hjust = 0,
+                label.colour = NA, fill = NA, family = "Dolly") +
+  coord_sf(clip = "off") +
+  theme_classic() +
+  labs(title = "Tectonic plates",
+       subtitle = "A Behrmann projection") +
+  theme(plot.background = element_rect(fill = "black", colour = NA),
+        panel.background = element_rect(fill = "black", colour = NA),
+        plot.title = element_markdown(colour = "white", hjust = 0,
+                                      margin = margin(l = 30),
+                                      family = "Dolly"),
+        plot.subtitle = element_markdown(colour = "white", hjust = 0,
+                                         margin = margin(l = 30, b = -10),
+                                         family = "Dolly"),
+        plot.margin = margin(t = 10, b = -25, r = -55, l = -65))
+
+ggsave(here::here("./Day3/Day3_poly.png"), dpi = 600,
+       height = 3, width = 6.25)
+```

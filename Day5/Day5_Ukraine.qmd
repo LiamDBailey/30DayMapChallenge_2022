@@ -1,0 +1,158 @@
+---
+title: "Day5_Ukraine"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(showtext) # Custom fonts
+library(cowplot) #Combining plots
+library(rnaturalearthhires) # Country border data
+library(png) # To read in PNG
+library(grid) # To convert PNG to grob to add to plot
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## https://fonts.google.com/specimen/Rubik+Mono+One
+sysfonts::font.add(family = "Rubik",
+                   regular = "RubikMonoOne-Regular.ttf")
+```
+
+Extract borders
+
+```{r}
+countries <- rnaturalearthhires::countries10 %>% 
+  sf::st_as_sf()
+
+#Filter out Ukraine
+ukraine <- countries %>% 
+  filter(SOVEREIGNT == "Ukraine")
+
+## The data doesn't include Crimea as Ukraine! I will add it.
+crimea <- countries %>% 
+  filter(SOVEREIGNT == "Russia") %>% 
+  #Separate into separate polygons
+  sf::st_cast(to = "POLYGON") %>% 
+  #Filter only those inside Crimea bounding box
+  sf::st_filter(y = sf::st_bbox(c(xmin = 31.2282257629,
+                                  ymin = 43.2885501901,
+                                  xmax = 36.9081574035,
+                                  ymax = 47.3047023411),
+                                crs = "EPSG:4326") %>% sf::st_as_sfc(),
+                .predicate = st_within)
+
+#Combine with other Ukraine polygon
+ukraine <- bind_rows(ukraine, crimea) %>% 
+  summarise()
+```
+
+Determine half way point in latitude where we can split the polygon into blue and yellow
+
+```{r}
+ukraine_extent <- sf::st_bbox(ukraine)
+
+#Make the cutoff a bit higher that mean because otherwise it messes with polygon near Odessa
+mid_lat <- mean(c(ukraine_extent["ymin"], ukraine_extent["ymax"])) + 0.175
+
+ukraine_extent_lower <- ukraine_extent
+ukraine_extent_lower["ymax"] <- mid_lat
+# Add buffer here to make sure no clipping at edges
+ukraine_extent_lower["ymin"] <- ukraine_extent_lower["ymin"] - 10
+
+ukraine_extent_upper <- ukraine_extent
+ukraine_extent_upper["ymin"] <- mid_lat
+# Add buffer here to make sure no clipping at edges
+ukraine_extent_upper["ymax"] <- ukraine_extent_upper["ymax"] + 10
+
+ukraine_top <- ukraine %>% 
+  sf::st_crop(ukraine_extent_upper)
+
+ukraine_bottom <- ukraine %>% 
+  sf::st_crop(ukraine_extent_lower)
+```
+
+Create a point at Kyiv
+
+```{r}
+kyiv_pt <- sf::st_point(c(30.523333, 50.450001)) %>% 
+  sf::st_geometry() %>% 
+  sf::st_as_sf() %>% 
+  sf::st_set_crs("EPSG:4326") %>% 
+  bind_cols(sf::st_coordinates(.))
+```
+
+Read in lines and point for snake island that I created in QGIS
+
+```{r}
+ukraine_lines <- sf::read_sf(here::here("./Day5/ukraine_lines.shp"))
+snake_island  <- sf::read_sf(here::here("./Day5/snake_island.shp"))
+```
+
+Centre map around Ukraine
+
+```{r}
+# Centre on Kyiv
+zoom_to <- c(30.475695, 48.5)
+
+zoom_level <- 3.5
+lon_span <- 360 / 2^zoom_level
+lat_span <- 180 / 2^zoom_level
+
+lon_bounds <- sf::st_point(c(zoom_to[1] - lon_span / 2, zoom_to[1] + lon_span / 2))
+#Use slightly thinner lat margin to make a rectangular plot
+lat_bounds <- sf::st_point(c(zoom_to[2] - lat_span / 2.5, zoom_to[2] + lat_span / 2.5))
+```
+
+```{r}
+ukraine_blue   <- "#0058b5"
+ukraine_yellow <- "#f7ce00" 
+```
+
+Load in Ukraine trident image
+
+```{r}
+img <- readPNG(here::here("Day5/ukraine_trident.png"), native = TRUE)
+trident <- rasterGrob(img, interpolate = TRUE)
+```
+
+Plot
+
+```{r}
+baseplot <- ggplot() +
+  geom_sf(data = countries, fill = "grey10", colour = "grey60",
+          size = 0.1) +
+  geom_sf(data = ukraine_top, fill = ukraine_blue) +
+  geom_sf(data = ukraine_bottom, fill = ukraine_yellow) +
+  geom_sf(data = kyiv_pt, size = 1, colour = "white") +
+  geom_sf(data = kyiv_pt, size = 3.5, colour = "white",
+          shape = 21, fill = NA, stroke = 0.75) +
+  annotation_custom(trident, xmin = 36, xmax = 38,
+                    ymin = 47.75, ymax = 49.75) +
+  geom_sf(data = ukraine_lines,
+          size = 0.25, colour = "white") +
+  geom_sf(data = snake_island,
+          colour = ukraine_yellow,
+          size = 2) +
+  coord_sf(expand = FALSE, xlim = lon_bounds, ylim = lat_bounds) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "grey20", colour = NA),
+        plot.background = element_rect(fill = "grey20", colour = NA))
+
+baseplot
+```
+
+Save here without text. Add final text in Photoshop to save time!
+
+```{r}
+ggdraw() +
+  draw_plot(baseplot, x = -0.1, y = -0.15, width = 1.2, height = 1.2) +
+  theme(plot.background = element_rect(fill = "grey20", colour = NA),
+        panel.background = element_rect(fill = "grey20", colour = NA))
+
+ggsave(here::here("./Day5/Day5_Ukraine_raw.png"))
+```

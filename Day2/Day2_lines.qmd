@@ -8,14 +8,15 @@ editor: visual
 
 ```{r}
 #| message: false
-library(ggplot2) # For plotting
-library(dplyr) # Data wrangling
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Work with spatial data
 library(showtext) # Custom fonts
 library(cowplot) # For combining plot and insets/text
 library(ggtext) # Markdown text
 library(htmltools) # Custom font styles
 library(osmdata) # OSM data
 library(geodata) # To get elevation data
+library(rnaturalearthhires) # High res border shapefile
 library(stars) # Working with raster data
 library(ggridges) # To make ridge plot
 

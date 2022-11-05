@@ -21,10 +21,10 @@ Quick Link
 
 <!-- toc -->
   - Day 1 - Points (*NOTE:* This is in a separate repo) [:house: Rental prices in the San Francisco Bay area](https://github.com/LiamDBailey/TidyTuesday/blob/master/plots/2022/Week27.png)
-  - Day 2 - Lines [:au: Ridge plot of Australian Capital Territory](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day2/Day2_lines.png)
+  - Day 2 - Lines [🇦🇺 Ridge plot of Australian Capital Territory](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day2/Day2_lines.png)
   - Day 3 - Polygons [:volcano: Tectonic plates across the globe](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day3/Day3_poly.png)
   - Day 4 - Green [:palm_tree: Forest cover map of the Amazon](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day4/Day4_green.png)
-  - Day 5 - Ukraine [:ua: Internationally recognised borders of Ukraine](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png)
+  - Day 5 - Ukraine [🇺🇦 Internationally recognised borders of Ukraine](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png)
   
 <!-- tocstop -->
 
@@ -38,7 +38,7 @@ Quick Link
 
 ***
 
-### [Day 2 - Lines](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day2/Day2_lines.png) :au: Ridge plot of Australian Capital Territory
+### [Day 2 - Lines](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day2/Day2_lines.png) 🇦🇺  Ridge plot of Australian Capital Territory
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day2/Day2_lines.png)
 
@@ -56,7 +56,7 @@ Quick Link
 
 ***
 
-### [Day 5 - Ukraine](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png) :ua: Internationally recognised borders of Ukraine
+### [Day 5 - Ukraine](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png) 🇺🇦 Internationally recognised borders of Ukraine
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png)
 

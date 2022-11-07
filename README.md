@@ -26,6 +26,7 @@ Quick Link
   - Day 4 - Green [:palm_tree: Forest cover map of the Amazon](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day4/Day4_green.png)
   - Day 5 - Ukraine [🇺🇦 Internationally recognised borders of Ukraine](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png)
   - Day 6 - Network [:tram: Melbourne tram network](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day6/Day6_network.png)
+  - Day 7 - Raster [🇯🇵 Mt. Fuji elevation map](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day7/Day7_raster.png)
   
 <!-- tocstop -->
 
@@ -66,6 +67,12 @@ Quick Link
 ### [Day 6 - Network](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day6/Day6_network.png) :tram: Melbourne tram network
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day6/Day6_network.png)
+
+***
+
+### [Day 7 - Raster](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day7/Day7_raster.png) 🇯🇵 Mt. Fuji elevation map
+
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day7/Day7_raster.png)
 
 ***
 

@@ -25,6 +25,7 @@ Quick Link
   - Day 3 - Polygons [:volcano: Tectonic plates across the globe](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day3/Day3_poly.png)
   - Day 4 - Green [:palm_tree: Forest cover map of the Amazon](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day4/Day4_green.png)
   - Day 5 - Ukraine [🇺🇦 Internationally recognised borders of Ukraine](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png)
+  - Day 6 - Network [:tram: Melbourne tram network](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day6/Day6_network.png)
   
 <!-- tocstop -->
 
@@ -59,6 +60,12 @@ Quick Link
 ### [Day 5 - Ukraine](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png) 🇺🇦 Internationally recognised borders of Ukraine
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png)
+
+***
+
+### [Day 6 - Network](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day6/Day6_network.png) :tram: Melbourne tram network
+
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day6/Day6_network.png)
 
 ***
 

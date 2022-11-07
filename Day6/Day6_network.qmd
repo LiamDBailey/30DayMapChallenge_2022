@@ -1,0 +1,373 @@
+---
+title: "Day6_Network"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(smoothr) # Smooth edges of sf objects
+library(rnaturalearth) # For country/state outlines
+```
+
+# OSM data
+
+Bounding box of Melbourne
+
+```{r}
+melb_bbox <- getbb(place_name = "Melbourne, Australia")
+```
+
+Extract tramlines...
+
+```{r}
+tram_lines  <- opq(bbox = melb_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'route', value = "tram") %>% 
+  osmdata_sf()
+
+stops <- tram_lines$osm_points
+#Lines we use the multiline data b/c it has line info
+#We can filter just a single ID
+lines <- tram_lines$osm_multilines %>% 
+  #Remove lines that have letters
+  filter(!stringr::str_detect(ref, pattern = "[a-d]")) %>% 
+  group_by(osm_id) %>% 
+  slice(1) %>% 
+  ungroup()
+
+tram_bounding <- sf::st_bbox(lines)
+```
+
+```{r}
+#Plot to see what it looks like
+ggplot() +
+  geom_sf(data = lines) +
+  geom_sf(data = stops, size = 0.25) +
+  theme_void()
+```
+
+Also extract roadways...
+
+```{r}
+## Extract larger roads
+highways  <- opq(bbox = melb_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'highway', value = c('motorway', 'trunk', 'primary', 'secondary', 'tertiary')) %>% 
+  osmdata_sf()
+
+# Filter large motorways
+main_motorways <- highways$osm_lines %>%
+  filter(highway %in% c("trunk", "motorway"))
+
+# Filter primary/secondary roads
+large_roads <- highways$osm_lines %>%
+  filter(highway %in% c("primary", "secondary"))
+
+# Filter tertiary raods
+small_roads <- highways$osm_lines %>%
+  filter(highway %in% c("tertiary"))
+
+# Residential roads
+smallest_roads  <- opq(bbox = melb_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'highway', value = c('residential')) %>% 
+  osmdata_sf()
+
+smallest_roads_line <- smallest_roads$osm_lines
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = main_motorways, size = 0.5) +
+  geom_sf(data = large_roads, size = 0.25) +
+  geom_sf(data = small_roads, size = 0.1) +
+  geom_sf(data = smallest_roads_line, size = 0.05) +
+  theme_void()
+```
+
+Extract Port Phillip Bay...
+
+```{r}
+bay  <- opq(bbox = melb_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'natural', value = c('bay')) %>% 
+  osmdata_sf()
+
+bay_poly <- bay$osm_multipolygons
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = bay_poly, colour = "grey10", fill = "light blue",
+          size = 0.1, alpha = 0.5) +
+  geom_sf(data = main_motorways, colour = "grey80", size = 0.25) +
+  geom_sf(data = lines, colour = "grey10") +
+  scale_colour_manual(values = lines$colour) +
+  scale_size_continuous(range = c(1.1, 0.25), trans = "log10") +
+  coord_sf(xlim = tram_bounding$xlim,
+           ylim = tram_bounding$ylim) +
+  theme_void() +
+  theme(legend.position = "none")
+```
+
+Add in rivers, parks, and lakes...
+
+```{r}
+river  <- opq(bbox = melb_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'waterway', value = c('river')) %>% 
+  osmdata_sf()
+
+river_line <- river$osm_multilines
+
+parks  <- opq(bbox = melb_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'leisure', value = c('park', 'garden')) %>% 
+  osmdata_sf()
+
+parks_multipoly <- parks$osm_multipolygons
+parks_poly      <- parks$osm_polygons
+parks_poly      <- bind_rows(parks_multipoly, parks_poly)
+
+lakes  <- opq(bbox = melb_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'water', value = c('lake')) %>% 
+  osmdata_sf()
+
+lakes_poly <- lakes$osm_multipolygons
+```
+
+```{r}
+# Only use large parks (otherwise we get too many green spaces)
+large_parks <- parks_poly %>% 
+  mutate(area = as.numeric(sf::st_area(.))) %>% 
+  filter(area > 100000)
+```
+
+
+```{r}
+water_blue <- "#6082B6"
+park_green <- "#00A36C"
+
+ggplot() +
+  geom_sf(data = large_parks,
+          fill = park_green,
+          colour = NA) +
+  geom_sf(data = lakes_poly,
+          fill = water_blue,
+          colour = NA) +
+  geom_sf(data = river_line,
+          colour = water_blue,
+          size = 1.5) +
+  geom_sf(data = bay_poly,
+          colour = NA,
+          fill = water_blue,
+          size = 0.1) +
+  geom_sf(data = main_motorways, colour = "grey80", size = 0.3) +
+  geom_sf(data = lines,
+          colour = "grey10") +
+  scale_colour_manual(values = lines$colour) +
+  scale_size_continuous(range = c(0.75, 0.1)) +
+  coord_sf(xlim = tram_bounding$xlim,
+           ylim = tram_bounding$ylim) +
+  theme_void() +
+  theme(legend.position = "none")
+```
+
+Smooth edges...
+
+```{r}
+large_parks_smooth <- smooth(large_parks, method = "ksmooth", smoothness = 2)
+lakes_poly_smooth  <- smooth(lakes_poly, method = "ksmooth", smoothness = 2)
+bay_poly_smooth  <- smooth(bay_poly, method = "ksmooth", smoothness = 2)
+main_motorways_smooth <- smooth(main_motorways, method = "ksmooth", smoothness = 2)
+tram_smooth           <- smooth(lines, method = "ksmooth", smoothness = 10)
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = large_parks_smooth,
+          fill = park_green,
+          colour = NA) +
+  geom_sf(data = lakes_poly_smooth,
+          fill = water_blue,
+          colour = NA) +
+  geom_sf(data = river_line,
+          colour = water_blue,
+          size = 1.5) +
+  geom_sf(data = bay_poly,
+          colour = NA,
+          fill = water_blue,
+          size = 0.1) +
+  geom_sf(data = main_motorways_smooth, colour = "grey90", size = 0.75) +
+  geom_sf(data = large_roads,
+          colour = "grey90", size = 0.5) +
+  geom_sf(data = small_roads,
+          colour = "grey90", size = 0.25) +
+  geom_sf(data = smallest_roads_line,
+          colour = "grey90", size = 0.1) +
+  geom_sf(data = tram_smooth,
+          lineend = "round", linejoin = "round",
+          colour = "grey10") +
+  scale_colour_manual(values = lines$colour) +
+  scale_size_continuous(range = c(0.75, 0.1)) +
+  coord_sf(xlim = tram_bounding$xlim,
+           ylim = tram_bounding$ylim) +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "grey80", colour = NA),
+        panel.background = element_rect(fill = "grey80", colour = NA))
+```
+
+Add circle around tram lines. To make buffer, we need projected CRS.
+
+```{r}
+centre_point <- tram_smooth %>% 
+  summarise() %>% 
+  sf::st_centroid()
+
+tram_buffer <- centre_point %>% 
+  sf::st_transform("EPSG:3112") %>% 
+  sf::st_buffer(dist = 20000)
+
+circle_bounding <- tram_buffer %>% 
+  sf::st_bbox()
+
+ggplot() +
+  geom_sf(data = tram_buffer) +
+  geom_sf(data = tram_smooth) +
+  theme_void()
+
+```
+
+Cut out all spatial objects to be within circle (don't need to do this for tramline because we know they're within the circle).
+
+```{r}
+
+large_parks_proj <- large_parks_smooth %>% 
+  sf::st_transform("EPSG:3112") %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(tram_buffer)
+
+lakes_poly_proj <- lakes_poly_smooth %>% 
+  sf::st_transform("EPSG:3112") %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(tram_buffer)
+
+river_line_proj <- river_line %>% 
+  sf::st_transform("EPSG:3112") %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(tram_buffer)
+
+bay_poly_proj <- bay_poly %>% 
+  sf::st_transform("EPSG:3112") %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(tram_buffer)
+
+main_motorways_proj <- main_motorways_smooth %>% 
+  sf::st_transform("EPSG:3112") %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(tram_buffer)
+
+large_roads_proj <- large_roads %>% 
+  sf::st_transform("EPSG:3112") %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(tram_buffer)
+
+small_roads_proj <- small_roads %>% 
+  sf::st_transform("EPSG:3112") %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(tram_buffer)
+
+smallest_roads_proj <- smallest_roads_line %>% 
+  sf::st_transform("EPSG:3112") %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(tram_buffer)
+
+```
+
+
+```{r}
+baseplot <- ggplot() +
+  geom_sf(data = tram_buffer,
+          colour = NA,
+          fill = "grey80") +
+  geom_sf(data = large_parks_proj,
+          fill = park_green,
+          colour = NA) +
+  geom_sf(data = lakes_poly_proj,
+          fill = water_blue,
+          colour = NA) +
+  geom_sf(data = river_line_proj,
+          colour = water_blue,
+          size = 0.75) +
+  geom_sf(data = bay_poly_proj,
+          colour = NA,
+          fill = water_blue,
+          size = 0.05) +
+  geom_sf(data = main_motorways_proj,
+          colour = "grey90", size = 0.375) +
+  geom_sf(data = large_roads_proj,
+          colour = "grey90", size = 0.25) +
+  geom_sf(data = small_roads_proj,
+          colour = "grey90", size = 0.125) +
+  geom_sf(data = smallest_roads_proj,
+          colour = "grey90", size = 0.05) +
+  geom_sf(data = tram_smooth,
+          size = 1,
+          lineend = "round", linejoin = "round",
+          colour = "grey10") +
+  geom_sf(data = tram_smooth,
+          size = 0.1,
+          lineend = "round", linejoin = "round",
+          colour = "white") +
+  geom_sf(data = tram_buffer,
+          colour = "grey10",
+          fill = NA, size = 0.5) +
+  scale_colour_manual(values = lines$colour) +
+  scale_size_continuous(range = c(0.75, 0.1)) +
+  coord_sf(crs = "EPSG:3112",
+           xlim = circle_bounding$xlim,
+           ylim = circle_bounding$ylim) +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.background = element_blank(),
+        panel.background = element_blank())
+
+baseplot
+```
+
+Create map of Australia
+
+```{r}
+Aus <- rnaturalearth::ne_states(returnclass = "sf") %>% 
+  filter(grepl(adm1_code, pattern = "AUS")) %>% 
+  sf::st_transform("EPSG:3112")
+
+Aus_map <- ggplot() +
+  geom_sf(data = Aus,
+          fill = "grey85",
+          colour = "grey10", size = 0.1) +
+  geom_sf(data = tram_buffer,
+          fill = "grey50",
+          colour = "black",
+          size = 0.1) +
+  theme_void()
+```
+
+Combine map of Australia and circle inset.
+
+```{r}
+ggdraw() +
+  cowplot::draw_plot(Aus_map, x = -0.1, y = -0.2) +
+  cowplot::draw_plot(baseplot,
+                     x = 0.35, y = 0.15,
+                     height = 0.75, width = 0.75) +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA))
+
+# Add text in photoshop
+ggsave(here::here("Day6/Day6_network_raw.png"),
+       dpi = 600,
+       height = 6, width = 9.2)
+```

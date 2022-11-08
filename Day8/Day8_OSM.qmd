@@ -13,6 +13,7 @@ library(sf) # Working with spatial objects
 library(osmdata) # Download OSM data
 library(cowplot) # Combine plots
 library(showtext) # Custom fonts
+library(ggtext) # Fonts
 library(htmltools) # Custom html for text
 library(ggsn) # Add scale bar
 
@@ -295,7 +296,9 @@ ggdraw() +
                 size = 3, colour = "black",
                 label.colour = NA, fill = NA,
                 family = "Reross",
-                hjust = 0.5)
+                hjust = 0.5) +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA))
 
 ggsave(filename = here::here("Day8/Day8_osm.png"),
        dpi = 600,

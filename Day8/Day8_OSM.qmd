@@ -1,0 +1,304 @@
+---
+title: "Day8_OpenStreetMaps"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(htmltools) # Custom html for text
+library(ggsn) # Add scale bar
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## FONTS FROM https://fonts.adobe.com/fonts/hidden-treasures#fonts-section
+sysfonts::font_add(family = "Joschmi",
+                   regular = "Joschmi_regular.otf")
+sysfonts::font_add(family = "Reross",
+                   regular = "RerossQuadratic.otf")
+```
+
+# OSM data
+
+Define projected CRS for making buffer
+
+```{r}
+target_crs <- "EPSG:3068"
+```
+
+Create a circle around my street that we can use to crop objects and bounding box for OSM query.
+
+```{r}
+centre_point <- sf::st_point(c(13.43606072883533, 52.48658046606347)) %>% 
+  sf::st_geometry() %>% 
+  sf::st_set_crs("EPSG:4326") %>% 
+  sf::st_transform(target_crs)
+
+buffer <- centre_point %>% 
+  sf::st_buffer(dist = 2500) %>% 
+  #Convert back to WGS84 afterwards. Easier to work with e.g. ggsn for scale bar
+  sf::st_transform("EPSG:4326")
+
+ggplot() +
+  geom_sf(data = buffer) +
+  geom_sf(data = centre_point)
+```
+
+Create bounding box based on circle
+
+```{r}
+buffer_4326 <- buffer %>% 
+  sf::st_bbox()
+
+nkln_bbox <- matrix(buffer_4326, ncol = 2)
+colnames(nkln_bbox) <- c("min", "max")
+rownames(nkln_bbox) <- c("x", "y")
+```
+
+Extract roads
+
+```{r}
+## Extract larger roads
+highways  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'highway', value = c('motorway', 'trunk', 'primary', 'secondary', 'tertiary')) %>% 
+  osmdata_sf()
+
+# Filter large motorways
+main_motorways <- highways$osm_lines %>%
+  filter(highway %in% c("trunk", "motorway"))
+
+# Filter primary/secondary roads
+large_roads <- highways$osm_lines %>%
+  filter(highway %in% c("primary", "secondary"))
+
+# Filter tertiary raods
+small_roads <- highways$osm_lines %>%
+  filter(highway %in% c("tertiary"))
+
+# Residential roads
+smallest_roads  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'highway', value = c('residential')) %>% 
+  osmdata_sf()
+
+smallest_roads <- smallest_roads$osm_lines
+
+# Service roads and alleys
+service_roads  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'highway', value = c('service')) %>% 
+  osmdata_sf()
+
+service_roads <- service_roads$osm_lines
+
+# Running tracks and paths
+tracks  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'leisure', value = c('track')) %>% 
+  osmdata_sf()
+
+paths  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'highway', value = c('path')) %>% 
+  osmdata_sf()
+
+track_and_path <- sf::st_cast(tracks$osm_polygons, "LINESTRING") %>%
+  dplyr::bind_rows(tracks$osm_lines) %>% 
+  dplyr::bind_rows(paths$osm_lines)
+```
+
+Extract waterways...
+
+```{r}
+## Extract canal and river
+waterways  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'waterway', value = c('canal', 'river')) %>% 
+  osmdata_sf()
+
+waterways_line <- waterways$osm_multilines
+```
+
+Extract green spaces...
+
+```{r}
+## Extract parks
+parks  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'leisure', value = c('park')) %>% 
+  osmdata_sf()
+
+## Also cemeteries
+cemetery  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'landuse', value = c('cemetery')) %>% 
+  osmdata_sf()
+
+## Sports pitches
+sports  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'leisure', value = c('pitch')) %>% 
+  osmdata_sf()
+
+## Allotment gardens
+gardens  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'landuse', value = c('allotments')) %>% 
+  osmdata_sf()
+
+parks_poly <- parks$osm_multipolygons %>% 
+  dplyr::bind_rows(parks$osm_polygons) %>% 
+  dplyr::bind_rows(cemetery$osm_multipolygons) %>% 
+  dplyr::bind_rows(cemetery$osm_polygons) %>% 
+  dplyr::bind_rows(sports$osm_multipolygons) %>% 
+  dplyr::bind_rows(sports$osm_polygons) %>% 
+  dplyr::bind_rows(gardens$osm_multipolygons) %>% 
+  dplyr::bind_rows(gardens$osm_polygons)
+```
+
+Extract buildings...
+
+```{r}
+## Extract buildings
+buildings  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  ## Allow all values
+  add_osm_feature(key = 'building') %>% 
+  osmdata_sf()
+
+building_poly <- buildings$osm_multipolygons %>% 
+  dplyr::bind_rows(buildings$osm_polygons)
+```
+
+Extract train tracks...
+
+```{r}
+## Extract railway lines
+rail  <- opq(bbox = nkln_bbox, timeout = 120) %>% 
+  ## Allow all values
+  add_osm_feature(key = 'railway', value = c("rail", "light_rail")) %>% 
+  osmdata_sf()
+
+rail_lines <- rail$osm_lines
+```
+
+Clip everything within our circle
+
+```{r}
+main_motorways_clip <- main_motorways %>% 
+  sf::st_intersection(buffer)
+
+large_roads_clip <- large_roads %>% 
+  sf::st_intersection(buffer)
+
+small_roads_clip <- small_roads %>% 
+  sf::st_intersection(buffer)
+
+smallest_roads_clip <- smallest_roads %>% 
+  sf::st_intersection(buffer)
+
+service_roads_clip <- service_roads %>% 
+  sf::st_intersection(buffer)
+
+track_and_path_clip <- track_and_path %>% 
+  sf::st_intersection(buffer)
+
+rail_clip <- rail_lines %>% 
+  sf::st_intersection(buffer)
+
+waterways_clip <- waterways_line %>% 
+  sf::st_intersection(buffer)
+
+parks_clip <- parks_poly %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(buffer)
+
+buildings_clip <- building_poly %>% 
+  sf::st_make_valid() %>% 
+  sf::st_intersection(buffer)
+```
+
+Create map inside circle outline
+
+```{r}
+water_colour <- "#51678A"
+highway_colour <- "grey20"
+road_colour  <- "grey10"
+park_colour <- "#03603E"
+building_colour <- "grey90"
+
+baseplot <- ggplot() +
+  geom_sf(data = parks_clip,
+          fill = park_colour,
+          colour = NA) +
+  geom_sf(data = waterways_clip,
+          aes(size = waterway),
+          colour = water_colour) +
+  geom_sf(data = rail_clip,
+          size = 0.25,
+          colour = road_colour) +
+  geom_sf(data = buildings_clip,
+          fill = building_colour,
+          colour = road_colour, size = 0.075) +
+  geom_sf(data = large_roads_clip, size = 0.4,
+          colour = highway_colour) +
+  geom_sf(data = small_roads_clip, size = 0.2,
+          colour = road_colour) +
+  geom_sf(data = smallest_roads_clip, size = 0.1,
+          colour = road_colour) +
+  geom_sf(data = service_roads_clip, size = 0.05,
+          colour = road_colour) +
+  geom_sf(data = track_and_path_clip, size = 0.01,
+          colour = road_colour) +
+  geom_sf(data = buffer,
+          fill = NA, colour = "black", size = 2) +
+  scalebar(transform = TRUE,
+           x.min = buffer_4326$xmin,
+           x.max = buffer_4326$xmax,
+           y.min = buffer_4326$ymin,
+           y.max = buffer_4326$ymax,
+           dist_unit = "m", dist = 1000,
+           anchor = c(x = mean(c(buffer_4326$xmin,
+                                 buffer_4326$xmax)) + 0.015,
+                      y = mean(c(buffer_4326$ymin,
+                                 buffer_4326$ymax)) - 0.026),
+           st.size = 3, st.dist = 0.03) +
+  scale_size_manual(values = c(0.75, 2.5)) +
+  coord_sf(clip = "off") +
+  theme_void() +
+  theme(legend.position = "none")
+```
+
+Add to space with title etc.
+
+```{r}
+custom_font_fn <- function(...) span(..., style = css(font_family = "Reross"))
+
+ggdraw() +
+  draw_plot(baseplot, height = 0.75, y = 0.1) +
+  geom_richtext(aes(x = 0.5, y = 0.9),
+                label = "BERLIN<br>NEUKÖLLN",
+                size = 14, colour = "black",
+                label.colour = NA, fill = NA,
+                family = "Joschmi", hjust = 0.5, lineheight = 0.9) +
+  geom_richtext(aes(x = 0.5, y = 0.08),
+                ## Need to switch between Reross and standard sans-serif font
+                ## because Reross doesn't support ° symbol
+                label = paste0("",
+                               custom_font_fn("52"), "°", 
+                               custom_font_fn(paste0("29'", '11.69"', "N   ", "13")),
+                               "°",
+                               custom_font_fn(paste0("26'", '09.81"', "E")),
+                               ""),
+                size = 6, colour = "black",
+                label.colour = NA, fill = NA,
+                hjust = 0.5) +
+  geom_richtext(aes(x = 0.5, y = 0.03),
+                label = "Plot: @ldbailey255 / Data: OpenStreetMap",
+                size = 3, colour = "black",
+                label.colour = NA, fill = NA,
+                family = "Reross",
+                hjust = 0.5)
+
+ggsave(filename = here::here("Day8/Day8_osm.png"),
+       dpi = 600,
+       height = 7, width = 5)
+```
+

@@ -27,6 +27,7 @@ Quick Link
   - Day 5 - Ukraine [🇺🇦 Internationally recognised borders of Ukraine](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day5/Day5_Ukraine.png)
   - Day 6 - Network [:tram: Melbourne tram network](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day6/Day6_network.png)
   - Day 7 - Raster [🇯🇵 Mt. Fuji elevation map](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day7/Day7_raster.png)
+  - Day 8 - OpenStreetMap [🇩🇪 Street map of Berlin, Neukölln](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day8/Day8_osm.png)
   
 <!-- tocstop -->
 
@@ -73,6 +74,12 @@ Quick Link
 ### [Day 7 - Raster](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day7/Day7_raster.png) 🇯🇵 Mt. Fuji elevation map
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day7/Day7_raster.png)
+
+***
+
+### [Day 8 - OpenStreetMap](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day8/Day8_osm.png) 🇩🇪 Street map of Berlin, Neukölln
+
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day8/Day8_osm.png)
 
 ***
 

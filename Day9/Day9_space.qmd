@@ -1,0 +1,159 @@
+---
+title: "Day9_space"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(ggtext) # Fonts
+library(htmltools) # Custom html for text
+library(ggsn) # Add scale bar
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## FONTS FROM https://fonts.adobe.com/fonts/hidden-treasures#fonts-section
+sysfonts::font_add(family = "Joschmi",
+                   regular = "Joschmi_regular.otf")
+sysfonts::font_add(family = "Reross",
+                   regular = "RerossQuadratic.otf")
+sysfonts::font_add(family = "Starry",
+                   regular = "OneStarryNight-lp45.ttf")
+```
+
+# Load data
+
+```{r}
+countries <- rnaturalearthhires::countries10 %>% 
+  sf::st_as_sf()
+
+NAmerica <- countries %>% 
+  filter(SOVEREIGNT %in% c("United States of America", "Canada", "Mexico")) %>% 
+  summarise() %>% 
+  sf::st_simplify(dTolerance = 10000)
+
+ggplot() +
+  geom_sf(data = NAmerica) +
+  coord_sf(xlim = c(-180, -50))
+```
+
+Raster of ALAN
+
+```{r}
+library(stars)
+alan_raster <- stars::read_stars(file.choose())
+
+NAmerica_bbox <- NAmerica %>% 
+  sf::st_bbox()
+
+NAmerica_bbox["xmax"] <- -40
+NAmerica_bbox["ymin"] <- -5
+
+NAmerica_crop <- NAmerica %>% 
+  sf::st_crop(NAmerica_bbox)
+
+alan_raster_crop <- alan_raster %>%
+  st_crop(NAmerica_bbox)
+
+alan_raster_mask <- alan_raster_crop[NAmerica_crop]
+
+#Convert to Zenith sky brightness
+alan_raster_mask_skybrightness <- log10((alan_raster_mask + 0.171168465)/108000000)/-0.4
+```
+
+```{r}
+alan_raster_mask_down <- alan_raster_mask_skybrightness %>% 
+  stars::st_downsample(n = 10)
+
+alan_raster_df <- as.data.frame(alan_raster_mask_down, xy = TRUE)
+```
+
+```{r}
+# Inverse of NAmerica polygon
+ocean <- NAmerica_bbox %>%
+  sf::st_as_sfc() %>% 
+  sf::st_difference(NAmerica_crop)
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = ocean,
+          colour = NA, fill = "#030620") +
+  geom_raster(data = alan_raster_df,
+              aes(x = x, y = y,
+                  alpha = World_Atlas_2015.tif),
+              fill = "#d6ab33") +
+  geom_sf(data = NAmerica_crop, fill = NA, colour = "white", size = 0.05) +
+  scale_alpha_continuous(limits = c(17.5, 21.95),
+                         range = c(1, 0),
+                         na.value = 0,
+                         trans = scales::exp_trans(base = 25)) +
+  coord_sf(
+    ylim = c(15, 75),
+    expand = FALSE) +
+  theme_void() +
+  theme(panel.background = element_blank(),
+        plot.background = element_blank(),
+        legend.position = "none",
+        plot.margin = margin(t = -3, b = -3,
+                             r = -3, l = -3))
+```
+
+```{r}
+library(jpeg)
+#Load background image
+background <- readJPEG(source = here::here("./Day9/background_img2_crop.jpg"))
+```
+
+
+```{r}
+(baseplot <- ggplot() +
+   background_image(background) +
+   geom_sf(data = ocean,
+           colour = NA, fill = "#00031F") +
+   geom_raster(data = alan_raster_df,
+               aes(x = x, y = y,
+                   alpha = World_Atlas_2015.tif),
+               # fill = "#d6ab33",
+               fill = "#00031F"
+   ) +
+   geom_sf(data = NAmerica_crop, fill = NA,
+           colour = "white", size = 0.02) +
+   scale_alpha_continuous(limits = c(17.5, 21.99999),
+                          range = c(1, 0),
+                          na.value = 0,
+                          trans = scales::exp_trans(base = 40)) +
+   coord_sf(
+     # xlim = c(-130, -60),
+     ylim = c(15, 75),
+     expand = FALSE) +
+   theme_void() +
+   theme(panel.background = element_blank(),
+         plot.background = element_blank(),
+         legend.position = "none",
+         plot.margin = margin(t = -3, b = -3,
+                              r = -3, l = -3)))
+```
+
+```{r}
+ggdraw() +
+  draw_plot(baseplot) +
+  # Having issues with line width of text, so do it in post-process
+  # No time for trouble-shooting!
+  geom_segment(aes(x = 0.715, xend = 0.95,
+                   y = 0.35, yend = 0.35),
+               colour = "white", size = 0.25) +
+  theme(panel.background = element_rect(fill = "#00031F"),
+        plot.background = element_rect(fill = "#00031F"))
+
+ggsave(filename = here::here("Day9/Day9_space_raw.png"), dpi = 600)
+```
+
+

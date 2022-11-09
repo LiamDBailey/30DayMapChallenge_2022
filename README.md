@@ -28,6 +28,7 @@ Quick Link
   - Day 6 - Network [:tram: Melbourne tram network](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day6/Day6_network.png)
   - Day 7 - Raster [🇯🇵 Mt. Fuji elevation map](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day7/Day7_raster.png)
   - Day 8 - OpenStreetMap [🇩🇪 Street map of Berlin, Neukölln](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day8/Day8_osm.png)
+  - Day 9 - Space [:star: Light pollution across N. America](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day9/Day9_space.png)  
   
 <!-- tocstop -->
 
@@ -80,6 +81,12 @@ Quick Link
 ### [Day 8 - OpenStreetMap](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day8/Day8_osm.png) 🇩🇪 Street map of Berlin, Neukölln
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day8/Day8_osm.png)
+
+***
+
+### [Day 9 - Space](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day9/Day9_space.png) :star: Light pollution across N. America
+
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day9/Day9_space.png)
 
 ***
 

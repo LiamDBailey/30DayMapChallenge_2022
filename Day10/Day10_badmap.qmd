@@ -1,0 +1,80 @@
+---
+title: "Day10_badmap"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(ggtext) # Fonts
+library(htmltools) # Custom html for text
+library(ggsn) # Add scale bar
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## FONTS FROM https://fonts.adobe.com/fonts/hidden-treasures#fonts-section
+sysfonts::font_add(family = "Joschmi",
+                   regular = "Joschmi_regular.otf")
+sysfonts::font_add(family = "Reross",
+                   regular = "RerossQuadratic.otf")
+sysfonts::font_add(family = "Starry",
+                   regular = "OneStarryNight-lp45.ttf")
+```
+
+```{r}
+countries <- rnaturalearth::countries110 %>% 
+  sf::st_as_sf()
+```
+
+```{r}
+countries_noant <- countries %>% 
+  filter(sovereignt != "Antarctica")
+
+mypalette <- c("#18ff00",
+               "#c0ff00",
+               "#002aff",
+               "#6000ff",
+               "#0066ff")
+
+(baseplot <- ggplot() +
+    geom_sf(data = countries_noant, aes(fill = income_grp,
+                                        colour = income_grp),
+            size = 0.1) +
+    scale_fill_manual(values = mypalette) +
+    scale_colour_manual(values = mypalette) +
+    theme_void() +
+    theme(legend.position = "bottom",
+          legend.direction = "horizontal",
+          legend.title = element_blank(),
+          legend.text = element_text(size = 10)))
+```
+
+```{r}
+library(png)
+nr10 <- readPNG(here::here("./Day10/ishihara_eg.png"))
+
+library(grid)
+nr10_grob <- rasterGrob(nr10, interpolate = TRUE)
+
+ggdraw() +
+  draw_plot(baseplot) +
+  geom_text(aes(x = 0.2, y = 0.9),
+            label = "DAY", size = 15) +
+  annotation_custom(nr10_grob, xmin = 0.2, xmax = 0.4,
+                    ymin = 0.825, ymax = 0.975) +
+  geom_text(aes(x = 0.5, y = 0.9),
+            label = ": A BAD MAP", size = 15)
+
+ggsave(filename = here::here("./Day10/Day10_badmap.png"), dpi = 600,
+       width = 14.6, height = 9)
+```
+
+
+

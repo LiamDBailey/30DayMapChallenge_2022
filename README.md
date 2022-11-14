@@ -30,6 +30,8 @@ Quick Link
   - Day 8 - OpenStreetMap [🇩🇪 Street map of Berlin, Neukölln](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day8/Day8_osm.png)
   - Day 9 - Space [:star: Light pollution across N. America](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day9/Day9_space.png)
   - Day 10 - A bad map [:eyes: A *very* colour-blind unfriendly map](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day10/Day10_badmap.png)
+  - Day 11 - Red [:desert: Drought patterns in the US Southwest](https://github.com/LiamDBailey/TidyTuesday/blob/master/plots/2022/Week24_map.gif)
+  - Day 12 - Scale [:ocean: Projecting the Great Pacific Garbage Patch over Europe](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day12/Day12_scale.png)
 
 <!-- tocstop -->
 
@@ -94,6 +96,18 @@ Quick Link
 ### [Day 10 - A bad map](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day10/Day10_badmap.png) :eyes: A *very* colour-blind unfriendly map
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day10/Day10_badmap.png)
+
+***
+
+### [Day 11 - Red](https://github.com/LiamDBailey/TidyTuesday/blob/master/plots/2022/Week24_map.gif) :desert: Drought patterns in the US Southwest
+
+![](https://github.com/LiamDBailey/TidyTuesday/blob/master/plots/2022/Week24_map.gif)
+
+***
+
+### [Day 12 - Scale](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day12/Day12_scale.png) :ocean: Projecting the Great Pacific Garbage Patch over Europe
+
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day12/Day12_scale.png)
 
 ***
 

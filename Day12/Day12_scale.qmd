@@ -1,0 +1,167 @@
+---
+title: "Day12_scale"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(ggtext) # Fonts
+library(htmltools) # Custom html for text
+library(smoothr) # Smooth spatial objects
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+sysfonts::font_add(family = "Bungee",
+                   regular = "Bungee2.otf",
+                   bold = "Bungee.otf")
+sysfonts::font_add(family = "Hammersmith",
+                   regular = "HammersmithOne-Regular.ttf")
+```
+
+```{r}
+#Read in GPGP polygon
+GPGP <- read_sf(here::here("./Day12/gpgp_poly.shp"))
+
+#Smooth
+GPGP_smooth <- smooth(GPGP, method = "ksmooth")
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = GPGP_smooth) +
+  geom_sf(data = GPGP, fill = "red", alpha = 0.3) +
+  theme_void()
+```
+
+```{r}
+#Pick point in Europe to shift to
+#Here we use border b/w Germany, France and Switzerland
+Europe_pt <- sf::st_point(c(7.548764, 47.606141)) 
+
+#Extract centre point of polygon
+GPGP_centre <- GPGP %>%
+  sf::st_centroid()
+```
+
+```{r}
+#Extract country borders and generate bounding box
+countries <- rnaturalearth::countries110 %>% 
+  sf::st_as_sf()
+
+Europe_bbox <- sf::st_bbox(c(xmin = -23,
+                             ymin = 35,
+                             xmax = 40,
+                             ymax = 71.9), crs = "EPSG:4326")
+```
+
+Transpose polygon under Mollweide equal-area projection
+
+```{r}
+GPGP_centre_proj <- GPGP_centre %>% 
+  sf::st_transform("ESRI:54009")
+
+Europe_proj <- Europe_pt %>% 
+  sf::st_geometry() %>% 
+  sf::st_set_crs("EPSG:4326") %>% 
+  sf::st_transform("ESRI:54009")
+
+#Diff on X
+xdiff_proj <- sf::st_coordinates(Europe_proj)[1] - sf::st_coordinates(GPGP_centre_proj)[1, 1]
+
+#Diff on Y
+ydiff_proj <- sf::st_coordinates(Europe_proj)[2] - sf::st_coordinates(GPGP_centre_proj)[1, 2]
+```
+
+```{r}
+#Convert polygon to points that we can transpose
+GPGP_pt_proj <- GPGP_smooth %>% 
+  sf::st_cast(to = "POINT") %>% 
+  sf::st_transform("ESRI:54009")
+```
+
+```{r}
+#Shift points to cover Europe then cast back into polygon
+GPGP_EU_proj <- GPGP_pt_proj %>% 
+  bind_cols(sf::st_coordinates(.)) %>% 
+  sf::st_drop_geometry() %>% 
+  mutate(X_shift = X + xdiff_proj,
+         Y_shift = Y + ydiff_proj) %>% 
+  sf::st_as_sf(coords = c("X_shift", "Y_shift"), crs = "ESRI:54009") %>% 
+  group_by(id) %>% 
+  summarise(do_union = FALSE) %>% 
+  sf::st_cast("MULTILINESTRING") %>% 
+  sf::st_cast("MULTIPOLYGON")
+```
+
+```{r}
+countries_proj <- countries %>% 
+  sf::st_transform("ESRI:54009")
+
+Europe_bbox_proj <- Europe_bbox %>% 
+  sf::st_as_sfc() %>% 
+  sf::st_transform("ESRI:54009") %>% 
+  sf::st_bbox()
+
+baseplot <- ggplot() +
+  geom_sf(data = countries_proj,
+          fill = "#6a6a6a", colour = "grey50") +
+  geom_sf(data = GPGP_EU_proj, size = 0.3,
+          fill = "red", alpha = 0.25,
+          colour = "grey10") +
+  coord_sf(xlim = Europe_bbox_proj$xlim,
+           ylim = Europe_bbox_proj$ylim,
+           expand = FALSE) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "#494949", colour = NA),
+        plot.margin = margin(t = 0, b = 0,
+                             r = 0, l = 0))
+```
+
+```{r}
+red_text <- function(...) span(..., style = css(color = "red", font_size = "9.5pt"))
+
+ggdraw() +
+  draw_plot(baseplot,
+            width = 1.1, height = 1.1,
+            x = -0.05) +
+  geom_richtext(aes(x = 0.03, y = 0.91),
+                label = "WHAT A LOAD OF RUBBISH...",
+                size = 7, colour = "white",
+                label.colour = NA, fill = NA,
+                hjust = 0,
+                family = "Bungee", fontface = "bold") +
+  geom_richtext(aes(x = 0.03, y = 0.785),
+                hjust = 0,
+                label = paste0("The Great Pacific Garbage Patch is a massive accumulation of plastic waste<br>that covers ", red_text("**1.6 million km^2**"), " of the Pacific Ocean!<br>If it were placed over Europe the garbage patch would be large enough to engulf<br>**8** countries, including Germany and France."),
+                size = 3.5, colour = "white",
+                label.colour = NA, fill = NA,
+                family = "Hammersmith", lineheight = 1.1) +
+  geom_richtext(aes(x = 0.98, y = 0.03),
+                hjust = 1,
+                label = paste0("Plot: @ldbailey255 | Data: Lebreton et al. (2018) Nature<br>Great Pacific Garbage Patch polygon is derived from Fig. 3a of Lebreton et al. (2018) and reprojected using a Mollweide equal-area projection."),
+                size = 1.5, colour = "white",
+                label.colour = NA, fill = NA,
+                family = "Hammersmith", lineheight = 1) +
+  geom_richtext(aes(x = 0.475, y = 0.425),
+                hjust = 0.5,
+                label = "Great Pacific<br>Garbage Patch",
+                size = 3, colour = "white",
+                label.colour = NA, fill = NA,
+                family = "Hammersmith", lineheight = 1.5)
+
+ggsave(filename = here::here("Day12/Day12_scale.png"), dpi = 600)
+```
+
+
+
+
+
+

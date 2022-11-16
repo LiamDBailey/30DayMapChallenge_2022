@@ -1,0 +1,50 @@
+---
+title: "Day12_scale"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+```
+
+```{r}
+Aus <- rnaturalearth::ne_states(country = "Australia", returnclass = "sf")
+
+clip_poly <- sf::read_sf(here::here("./Day13/barassi_line.shp"))
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = Aus) +
+  geom_sf(data = clip_poly, fill = "red", alpha = 0.25) +
+  geom_sf(data = barassi_line, size = 2)
+```
+
+```{r}
+Aus_clip <- sf::st_intersection(Aus, clip_poly)
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = Aus, fill = "#4f1cac", colour = "grey70", size = 0.25) +
+  geom_sf(data = Aus_clip, fill = "red", colour = "grey70") +
+  # geom_sf(data = barassi_line, lty = 1, size = 0.5) +
+  coord_sf(expand = FALSE) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "white", colour = NA))
+
+#Add text in photoshop for speed
+ggsave(filename = here::here("./Day13/Day13_5min.png"), dpi = 600)
+```
+
+
+
+
+
+
+

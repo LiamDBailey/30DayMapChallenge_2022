@@ -1,0 +1,136 @@
+---
+title: "Day15_food"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(ggtext) # Fonts
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## FONTS FROM https://fonts.adobe.com/fonts/hidden-treasures#fonts-section
+sysfonts::font_add(family = "Reross",
+                   regular = "RerossQuadratic.otf")
+sysfonts::font_add(family = "Bungee",
+                   regular = "Bungee2.otf",
+                   bold = "Bungee.otf")
+```
+
+# OSM data
+
+```{r}
+Syd_bbox <- matrix(c(150.551175, -34.087053,
+                     151.443814, -33.507317), nrow = 2)
+rownames(Syd_bbox) <- c("x", "y")
+colnames(Syd_bbox) <- c("min", "max")
+```
+
+```{r}
+redrooster  <- opq(bbox = Syd_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'name', value = c('Red Rooster')) %>% 
+  osmdata_sf()
+
+rr_line <- read_sf(here("./Day15/redrooster_line.shp"))  %>% 
+  sf::st_transform("EPSG:4283")
+
+postcodes <- read_sf(here("./Day15/POA_2016_AUST.shp"))
+```
+
+```{r}
+Syd_border <- opq(bbox = Syd_bbox, timeout = 120) %>% 
+  add_osm_feature(key = 'boundary', value = c('administrative')) %>% 
+  add_osm_feature(key = 'name', value = c('Sydney')) %>% 
+  add_osm_feature(key = 'admin_level', value = c('7')) %>% 
+  osmdata_sf()
+
+Syd_border_proj <- Syd_border$osm_multipolygons %>% 
+  sf::st_transform("EPSG:4283")
+```
+
+```{r}
+# Syd <- rnaturalearthhires::states10 %>% 
+#   sf::st_as_sf() %>% 
+#   filter(name == "New South Wales")
+
+#Create inverse to fade out other areas
+outside_syd <- postcodes %>% 
+  sf::st_difference(Syd_border_proj)
+```
+
+Load ATO data and combine with postcodes...
+
+```{r}
+ATO_data <- readr::read_csv(here("./Day15/ATO_data.csv"),
+                            show_col_types = FALSE) %>% 
+  mutate(Postcode = stringr::str_pad(Postcode, width = 4, side = "left", pad = "0"))
+
+postcode_ATO_data <- postcodes %>% 
+  rename(Postcode = POA_CODE16) %>% 
+  left_join(ATO_data, by = "Postcode")
+```
+
+```{r}
+library(rcartocolor)
+
+baseplot <- ggplot() +
+  geom_sf(data = postcode_ATO_data,
+          aes(fill = `Average salary or wages`),
+          colour = "grey80", size = 0.01) +
+  geom_sf(data = outside_syd,
+          colour = NA, fill = "grey90",
+          alpha = 0.25) +
+  geom_sf(data = Syd_border_proj,
+          colour = "grey10", fill = NA,
+          size = 0.2) +
+  geom_sf(data = rr_line) +
+  geom_sf(data = redrooster$osm_points %>% 
+            sf::st_transform("EPSG:4283"),
+          fill = "red", colour = "white", stroke = 0.75,
+          shape = 21, size = 2) + 
+  scale_fill_carto_c(palette = "BrwnYl",
+                     name = "Average salary<br>($AUD)",
+                     breaks = seq(25000, 125000, 25000),
+                     labels = paste0("$", seq(25000, 125000, 25000)), na.value = "grey50") +
+  coord_sf(
+    # xlim = Syd_bbox[1, ],
+    xlim = c(150.15, 151.475),
+    # ylim = Syd_bbox[2, ],
+    ylim = c(-34.18, -33.425),
+    expand = FALSE,
+    clip = "off"
+  ) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "light blue", colour = NA),
+        plot.background = element_rect(fill = "light blue", colour = NA),
+        legend.position = c(1, 0.5),
+        legend.title = element_markdown(family = "Reross",
+                                        lineheight = 1.1),
+        legend.text = element_markdown(family = "Reross"),
+        plot.margin = margin(r = 50))
+
+```
+
+```{r}
+ggdraw() +
+  draw_plot(baseplot) +
+  geom_richtext(aes(x = 0.03, y = 0.92),
+                label = "A tale of two Sydneys",
+                fill = NA, label.colour = NA, hjust = 0,
+                size = 6, colour = "white",
+                family = "Bungee", fontface = "bold")
+
+ggsave(filename = here("./Day15/Day15_food_raw.png"), dpi = 600)
+```
+
+
+
+

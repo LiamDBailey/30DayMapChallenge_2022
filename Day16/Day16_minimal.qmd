@@ -1,0 +1,85 @@
+---
+title: "Day16_minimal"
+format: html
+editor: visual
+---
+
+---
+title: "Day15_food"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(ggtext) # Fonts
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## FONTS FROM https://fonts.adobe.com/fonts/hidden-treasures#fonts-section
+sysfonts::font_add(family = "Reross",
+                   regular = "RerossQuadratic.otf")
+sysfonts::font_add(family = "Bungee",
+                   regular = "Bungee2.otf",
+                   bold = "Bungee.otf")
+```
+
+```{r}
+library(raster)
+#SRTM elevation data with UTM projection EPSG:32737
+elev <- raster(file.choose())
+crater_crop <- sf::st_bbox(c(xmin = 35.475,
+                             ymin = -3.4,
+                             xmax = 35.675,
+                             ymax = -2.8), crs = "EPSG:4326") %>% 
+  sf::st_as_sfc() %>% 
+  sf::st_sf() %>% 
+  sf::st_transform("EPSG:32737")
+
+elev_crop <- raster::crop(elev, crater_crop)
+```
+
+```{r}
+elev_df <- as.data.frame(elev_crop, xy = TRUE)
+
+baseplot <- ggplot() +
+  geom_contour(data = elev_df, aes(x = x, y = y, z = crater_elev_clip_UTM),
+               # binwidth = 100,
+               breaks = c(seq(1400, 2000, 100)),
+               colour = "white",
+               size = 0.1) +
+  geom_sf(data = hyenaR::sf_hyenaR$waterbodies_lakes[1, ] %>% 
+            sf::st_transform("EPSG:32737"),
+          fill = "light blue", colour = NA) +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "black",
+                                       colour = "white", size = 0.25),
+        panel.background = element_rect(fill = "black",
+                                        colour = "white", size = 0.25),
+        plot.margin = margin(r = 10, l = 10,
+                             b = 10, t = 10))
+```
+
+```{r}
+ggdraw() +
+  draw_plot(baseplot, height = 0.6, width = 0.5,
+            hjust = 0.5, vjust = 0.5, x = 0.5, y = 0.6) +
+  geom_richtext(aes(x = 0.5, y = 0.15),
+                label = "NGORONGORO CRATER<br>TANZANIA",
+                family = "Reross", colour = 'black',
+                label.colour = NA, fill = NA, size = 6) +
+  theme(panel.background = element_rect(fill = "white", colour = "black", size = 1),
+        plot.background = element_rect(fill = "white", colour = "black", size = 1))
+
+ggsave(filename = here::here("./Day16/Day16_minimal.png"), dpi = 600,
+       height = 3.5, width = 4.5)
+```
+
+

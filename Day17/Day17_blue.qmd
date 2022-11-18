@@ -1,0 +1,166 @@
+---
+title: "Day17_blue"
+format: html
+editor: visual
+---
+
+## NOTE FOR READING THIS CODE
+
+If you're not familiar with OJS in Quarto, be aware that code is NOT parsed sequentially. Many of the information you might be used to at the start of an R or Python script (e.g. load packages, define global objects) is at the end.
+
+This code is a (very minor) tweak on the great work from Torben Jansen (https://observablehq.com/@toja/spilhaus-world-ocean-map-in-a-square) who should take full credit! I simply added distribution polygon and changed map colours a bit.
+
+I'm fairly new to using OJS and D3, so my comments are fairly rudimentary given my current knowledge.
+
+## Create plot
+
+```{ojs}
+{
+  <!-- Create the plotting space for the map -->
+  const context = DOM.context2d(width, height);
+  
+  <!-- Create d3 geographic path generator (geopath) that can render objects in a given projection. -->
+  <!-- Here, the projection is the Spilhaus projection (ESRI: 54099) -->
+  const path = d3.geoPath(projection, context);
+
+  <!-- Create plotting space with pseudo-white background -->
+  context.fillStyle = "#faf8f6"
+  context.fillRect(0, 0, width, height);
+
+  <!-- Plot graticule lines (at 10 degree intervals) -->
+  context.strokeStyle = "#234";
+  context.beginPath();
+  path(graticule);
+  context.stroke();
+  
+  <!-- Plot landmass polygons with grey fill and dark outline -->
+  context.fillStyle = "#e5e5e5";
+  context.strokeStyle = "#1a1a1a";
+  context.beginPath();
+  path(land);
+  context.fill();
+  context.stroke();
+  
+  <!-- Plot dist of Oceanic Whitetip in blue with slight alpha -->
+  context.globalAlpha = 0.4;
+  context.fillStyle = "#000080";
+  context.beginPath();
+  path(dist);
+  context.fill();
+  context.globalAlpha = 1;
+
+  <!-- Render all this on a sphere... -->
+  context.beginPath();
+  path(sphere);
+  context.stroke();
+  
+  <!-- Return the plot -->
+  return context.canvas;
+}
+```
+
+## Define projection...
+
+Code to create Spilhaus Projection...
+
+```{ojs}
+projection = spilhausSquare()
+  .fitExtent([[0 , 0], [width, height]], sphere);
+```
+
+```{ojs}
+spilhausSquare = {
+  
+  const { abs, max, min, sin, cos, asin, acos, tan } = Math;
+  const pi = Math.PI, halfPi = pi / 2;
+  
+  const spilhausSquareRaw = function(lambda, phi) {
+    let a, b, sm, sn, xy;
+    const sp = tan(0.5 * phi);
+    a = cos(asin(sp)) * sin(0.5 * lambda);
+    sm = (sp + a) < 0;
+    sn = (sp - a) < 0;
+    b = acos(sp);
+    a = acos(a);
+
+    return ellipticFactory(a, b, sm, sn);
+  }
+  
+  spilhausSquareRaw.invert = function(x, y) {
+    // Very rough initial guess (especially at high northings)
+    let phi = max(min(y / 1.8540746957596883, 1), -1) * halfPi;
+    let lam = abs(phi) < pi ? max(min(x / 1.854074716833181, 1), -1) * pi : 0;
+    return inverse(x, y, lam, phi, spilhausSquareRaw);
+  }
+  
+  return () => d3.geoProjection(spilhausSquareRaw)
+    .rotate([-66.94970198, 49.56371678, 40.17823482])
+    .scale(134.838125);
+}
+```
+
+## Define parameters
+
+```{ojs}
+<!-- Canvas will be a square (i.e. height and width are always equal) -->
+<!-- Width will be defined by size of html -->
+height = width
+```
+
+```{ojs}
+<!-- Create sphere to build our map on -->
+sphere = ({ type: "Sphere" })
+```
+
+```{ojs}
+<!-- Create 10 degree graticules -->
+graticule = d3.geoGraticule10()
+```
+
+## Load data
+
+```{ojs}
+<!-- Load landmass polygons -->
+world = fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json").then(response => response.json())
+
+land = topojson.feature(world, world.objects.land)
+```
+
+```{ojs}
+<!-- Load Oceanic Whitetip distribution (from IUCN redlist) -->
+dist = FileAttachment("oceanic_whitetip_dist.geojson").json()
+```
+
+## Load packages and functions...
+
+```{ojs}
+topojson = require("topojson-client@3")
+```
+
+```{ojs}
+d3 = require("d3-geo@1")
+```
+
+```{ojs}
+import {ellipticFactory, inverse} from "@toja/adams-world-in-a-square-i-ii"
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

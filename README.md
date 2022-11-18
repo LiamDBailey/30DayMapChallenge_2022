@@ -36,6 +36,7 @@ Quick Link
   - Day 14 - Hexagons [:pizza: Best pizza restaurants in Manhattan](https://github.com/LiamDBailey/TidyTuesday/blob/master/plots/2019/01_10_19.png)
   - Day 15 - Food/drink [:chicken: Sydney's 'Red Rooster Line'](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day15/Day15_food.png)
   - Day 16 - Minimal [:volcano: Black and white elevation map of Ngorongoro Crater, Tanzania](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day16/Day16_minimal.png)
+  - Day 18 - Blue [:shark: Species distribution map of Oceanic Whitetip using Spilhaus projection](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day18/Day18_blue.png)
 
 <!-- tocstop -->
 
@@ -136,6 +137,12 @@ Quick Link
 ### [Day 16 - Minimal](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day16/Day16_minimal.png) :volcano: Black and white elevation map of Ngorongoro Crater, Tanzania
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day16/Day16_minimal.png)
+
+***
+
+### [Day 18 - Blue](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day18/Day18_blue.png) :shark: Species distribution map of Oceanic Whitetip using Spilhaus projection
+
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day18/Day18_blue.png)
 
 ***
 

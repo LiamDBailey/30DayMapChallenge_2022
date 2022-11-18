@@ -1,5 +1,5 @@
 ---
-title: "Day17_blue"
+title: "Day18_blue"
 format: html
 editor: visual
 ---
@@ -144,23 +144,3 @@ d3 = require("d3-geo@1")
 ```{ojs}
 import {ellipticFactory, inverse} from "@toja/adams-world-in-a-square-i-ii"
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

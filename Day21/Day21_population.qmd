@@ -1,0 +1,110 @@
+---
+title: "Day21_population"
+format: html
+editor: visual
+---
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(ggtext) # Fonts
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+sysfonts::font_add(family = "Bungee",
+                   regular = "Bungee4.otf")
+sysfonts::font_add(family = "Conqueror",
+                   regular = "AWConqueror.otf")
+sysfonts::font_add(family = "Mono",
+                   regular = "CutiveMono-Regular.ttf")
+```
+
+```{r}
+NZ  <- st_read(dsn = "/Users/liam/Downloads/kontur_population_NZ_20220630.gpkg")
+AUS <- st_read(dsn = "/Users/liam/Downloads/kontur_population_AU_20220630.gpkg")
+
+#Combine and get centroid
+Aus_NZ <- NZ %>% 
+  bind_rows(AUS) %>% 
+  sf::st_centroid()
+
+melb_centre <- c(144.9, -37.840935)
+
+zoom_level <- 8.5
+lon_span <- 360 / 2^zoom_level
+lat_span <- 180 / 2^zoom_level
+
+lon_bounds <- sf::st_point(c(melb_centre[1] - lon_span / 3, melb_centre[1] + lon_span / 3))
+lat_bounds <- sf::st_point(c(melb_centre[2] - lat_span / 2, melb_centre[2] + lat_span / 2))
+
+boundary <- 
+  # sf::st_bbox(c(xmin = 110, xmax = 180,
+  #             ymin = -50, ymax = -5), crs = "EPSG:4326") %>%
+  sf::st_bbox(c(xmin = lon_bounds[1], xmax = lon_bounds[2],
+                ymin = lat_bounds[1], ymax = lat_bounds[2]), crs = "EPSG:4326") %>%
+  sf::st_as_sfc() %>% 
+  sf::st_transform(sf::st_crs(Aus_NZ))
+
+bbox <- boundary %>% sf::st_bbox()
+
+Aus_shape <- rnaturalearthhires::countries10 %>% 
+  sf::st_as_sf() %>% 
+  filter(SOVEREIGNT == "Australia") %>% 
+  sf::st_transform(sf::st_crs(Aus_NZ))
+
+Aus_coast <- rnaturalearthhires::coastline10 %>%
+  sf::st_as_sf() %>% 
+  sf::st_transform(sf::st_crs(Aus_NZ))
+
+Aus_water <- boundary %>% 
+  sf::st_difference(Aus_shape)
+```
+
+```{r}
+baseplot <- ggplot() +
+  geom_sf(data = Aus_NZ,
+          shape = 21, colour = "white", stroke = 0.05, size = 4) +
+  geom_sf(data = Aus_NZ,
+          aes(size = population, colour = population),
+          shape = 19) +
+  geom_sf(data = boundary, fill = NA, colour = "white", size = 1) +
+  scale_size_continuous(range = c(0.01, 5), breaks = c(0.01, 1.25, 2.5, 5)) +
+  scale_colour_carto_c(palette = "SunsetDark", direction = -1) +
+  coord_sf(xlim = bbox$xlim,
+           ylim = bbox$ylim) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "grey10", colour = NA),
+        plot.margin = margin(r = 10, l = 10, t = 10, b = 10),
+        legend.position = "none")
+```
+
+```{r}
+final_plot <- ggdraw() +
+  draw_plot(baseplot, x = 0.5, y = 0.5, width = 0.85, height = 0.85,
+            hjust = 0.5, vjust = 0.5) +
+  geom_richtext(aes(x = 0.5, y = 0.93),
+                hjust = 0.5,
+                label = "MELBOURNE", colour = "white",
+                label.colour = NA, fill = NA, size = 25,
+                family = "Conqueror") +
+  geom_richtext(aes(x = 0.5, y = 0.06),
+                hjust = 0.5,
+                label = "AUSTRALIA", colour = "white",
+                label.colour = NA, fill = NA, size = 25,
+                family = "Conqueror") +
+  geom_richtext(aes(x = 0.675, y = 0.01),
+                hjust = 0, label = "Plot: @ldbailey255 | Data: Kontur Population Dataset",
+                colour = "white",
+                label.colour = NA, fill = NA, size = 4,
+                family = "Mono") +
+  theme(panel.background = element_rect(fill = "black", colour = NA))
+
+ggsave(filename = here::here("Day21/Day21_pop.png"), plot = final_plot, dpi = 600,
+       width = 16, height = 16,
+       )
+```
+

@@ -1,0 +1,141 @@
+---
+title: "Day25_2colour"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(ggtext) # Fonts
+library(htmltools) # Custom html for text
+library(here) #Relative paths
+library(ggnewscale) #Add multiple fill scales
+library(ggsn) #Add scale bar to map
+library(stars) #Work with DEM raster
+library(smoothr) #Smooth edges of polygons
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## FONTS FROM https://fonts.adobe.com/fonts/hidden-treasures#fonts-section
+sysfonts::font_add(family = "Dolly",
+                   regular = "DollyPro1.otf",
+                   italic = "DollyPro3.otf")
+sysfonts::font_add(family = "Plantin",
+                   regular = "Plantin_regular.otf",
+                   italic = "Plantin_italic.otf",
+                   bold = "Plantin_bold.otf")
+```
+
+Get coastline data for Aus (we want detailed so it has Kent group of Islands)
+
+```{r}
+kent_grp_bbox <- sf::st_bbox(c(xmin = 147.25,
+                               ymin = -39.528,
+                               xmax = 147.4,
+                               ymax = -39.412), crs = "EPSG:4326")
+
+# Source: 2004. GEODATA COAST 100K 2004. Geoscience Australia, Canberra. http://pid.geoscience.gov.au/dataset/ga/61395
+kent_grp_coast <- sf::st_read(here("Day24/data/tas_coastline.shp")) %>% 
+  sf::st_transform("EPSG:4326") %>% 
+  sf::st_crop(kent_grp_bbox) %>% 
+  group_by(`FNODE_`) %>% 
+  summarise(do_union = FALSE) %>% 
+  sf::st_cast("POLYGON")
+
+kent_grp_coast_smooth <- kent_grp_coast %>% 
+  smoothr::smooth(method = "ksmooth")
+
+ggplot() +
+  geom_sf(data = kent_grp_coast_smooth, fill = "green") +
+  coord_sf(xlim = kent_grp_bbox$xlim,
+           ylim = kent_grp_bbox$ylim)
+```
+
+Georef bathy data
+
+```{r}
+# Source: Georeferenced from Fig. 4 Jordan et al. 2002
+#https://www.researchgate.net/publication/228862583_Habitat_mapping_in_the_Kent_Group_of_islands
+bathy_data_georef <- sf::st_read(here("Day24/data/bathy_polygons_fixed.shp")) %>% 
+  smoothr::smooth(method = "ksmooth", n = 3)
+```
+
+Elevation data
+
+```{r}
+# Source: Tasmania 2m elevation model www.thelist.tas.gov.au
+kent_elev <- stars::read_stars(here("Day24/data/DEM_KentGrp.tif"))
+
+kent_elev_down <- kent_elev %>% 
+  stars::st_downsample(10)
+```
+
+```{r}
+baseplot <- ggplot() +
+  geom_sf(data = bathy_data_georef, aes(fill = as.factor(depth)), colour = "grey10", linewidth = 0.1) +
+  scale_fill_manual(values = c("#4BC7CF", "#3CB7CB", "#2DA7C7", "#1E97C4", "#0F7AC0", "#055A94"),
+                    labels = c("0-10m", "10-20m", "20-30m", "30-40m", "40-50m", ">50m"),
+                    name = "Depth (m)",
+                    guide = guide_legend()) +
+  new_scale("fill") +
+  geom_stars(data = kent_elev_down, na.action = na.omit) +
+  scale_fill_gradientn(colours = c("#4FC879", "#3AAB58", "#1B842C", "#046306"),
+                       breaks = seq(0, 300, 50),
+                       name = "Elevation (m)",
+                       guide = guide_colourbar()) +
+  geom_sf(data = kent_grp_coast_smooth, fill = NA, colour = "grey10", linewidth = 0.25) +
+  scalebar(transform = TRUE,
+           x.min = kent_grp_bbox$xmin,
+           x.max = kent_grp_bbox$xmax,
+           y.min = kent_grp_bbox$ymin,
+           y.max = kent_grp_bbox$ymax,
+           dist_unit = "km", dist = 1,
+           anchor = c(x = 147.395,
+                      y = -39.525),
+           st.size = 3, st.dist = 0.02, st.color = "white",
+           box.color = "black", border.size = 0.3,
+           family = "Plantin", fontface = "bold") + 
+  coord_sf(xlim = kent_grp_bbox$xlim,
+           ylim = kent_grp_bbox$ylim) +
+  theme_void() +
+  theme(legend.position = c(0.175, 0.125), legend.box = "horizontal",
+        legend.text = element_text(size = 6, family = "Plantin", colour = "white",
+                                   face = "bold"),
+        legend.title = element_text(size = 8, family = "Plantin", colour = "white",
+                                    face = "bold"),
+        legend.key.width = unit(0.35, "cm"), legend.key.height = unit(0.35, "cm"),
+        legend.margin = margin(r = 10))
+```
+
+```{r}
+ggdraw() +
+  draw_plot(baseplot, x = 0.5, y = 0.5, hjust = 0.5, vjust = 0.5,
+            width = 0.975, height = 0.975) +
+  geom_richtext(aes(x = 0.05, y = 0.92),
+                hjust = 0, label = "Kent Island Group",
+                colour = "white", family = "Plantin",
+                fontface = "bold",
+                label.colour = NA, fill = NA, size = 8) +
+  geom_richtext(aes(x = 0.044, y = 0.615),
+                hjust = 0, label = "Erith Island",
+                colour = "white", family = "Plantin",
+                label.colour = NA, fill = NA, size = 4) +
+  geom_richtext(aes(x = 0.875, y = 0.7),
+                hjust = 0, label = "North<br>East<br>Island",
+                colour = "white", family = "Plantin",
+                label.colour = NA, fill = NA, size = 3.5) +
+  geom_richtext(aes(x = 0.65, y = 0.23),
+                hjust = 0, label = "Deal Island",
+                colour = "white", family = "Plantin",
+                label.colour = NA, fill = NA, size = 4) +
+  theme(plot.background = element_rect(fill = "grey5", colour = NA))
+
+ggsave(here("Day25/Day25_2colour.png"), dpi = 600, width = 6, height = 6)
+```

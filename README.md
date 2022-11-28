@@ -39,6 +39,8 @@ Quick Link
   - Day 18 - Blue [:shark: Species distribution map of Oceanic Whitetip using Spilhaus projection](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day18/Day18_blue.png)
   - Day 21 - Kontur Population Dataset [:family: Population map of Melbourne, Australia](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day21/Day21_pop.png)
   - Day 23 - Movement [:whale: Movement of false killer whales in Hawaii](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_movement.png)
+  - Day 25 - Movement [🟩🟦 Elevation and bathymetric map of Kent Island Group, Australia](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day25/Day25_2colour.png)  
+  
 
 <!-- tocstop -->
 
@@ -157,6 +159,12 @@ Quick Link
 ### [Day 23 - Movement](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_movement.png) :whale: Movement of false killer whales in Hawaii
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_movement.png)
+
+***
+
+### [Day 25 - 2 colour](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day25/Day25_2colours.png) 🟩🟦 Elevation and bathymetric map of Kent Island Group, Australia
+
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day25/Day25_2colour.png)
 
 ***
 

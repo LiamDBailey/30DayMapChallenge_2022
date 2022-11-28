@@ -1,0 +1,141 @@
+---
+title: "Day23_Movement"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(ggtext) # Fonts
+library(htmltools) # Custom html for text
+library(here) #Relative paths
+library(ggfx) #Glow around lines
+library(marmap) #Bathymetry data
+library(rcartocolor) #Colour palettes
+library(png) #Load png image
+library(grid) #png to grob
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## FONTS FROM https://fonts.adobe.com/fonts/hidden-treasures#fonts-section
+sysfonts::font_add(family = "Dolly",
+                   regular = "DollyPro1.otf",
+                   italic = "DollyPro3.otf")
+```
+
+```{r}
+#Downloaded from Movebank
+#https://www.movebank.org/cms/webapp?gwt_fragment=page=studies,path=study17196801
+lines <- sf::st_read(here("Day23/data/lines.shp"))
+points <- sf::st_read(here("Day23/data/points.shp"))
+```
+
+```{r}
+#range of points
+hawaii_bbox <- sf::st_bbox(points)
+
+hawaii <- rnaturalearthhires::countries10 %>% 
+  sf::st_as_sf() %>% 
+  filter(SOVEREIGNT == "United States of America") %>% 
+  sf::st_crop(hawaii_bbox)
+
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = points, aes(colour = tag_ident), size = 0.05) +
+  geom_sf(data = hawaii, linewidth = 0.1, colour = "white", fill = "dark green") +
+  theme_classic() +
+  theme(panel.background = element_rect(fill = "dark blue"))
+```
+
+```{r}
+lines <- points %>% 
+  mutate(timestamp = lubridate::ymd_hms(timestamp)) %>% 
+  arrange(tag_ident, timestamp) %>% 
+  group_by(tag_ident) %>% 
+  summarise(do_union = FALSE) %>% 
+  sf::st_cast("LINESTRING")
+
+ggplot() +
+  with_outer_glow(
+   geom_sf(data = lines, aes(colour = tag_ident), alpha = 0.2, linewidth = 0.1),
+   expand = 2, sigma = 3, colour = "white"
+  ) +
+  geom_sf(data = lines, aes(colour = tag_ident), alpha = 0.6, linewidth = 0.2) +
+  geom_sf(data = hawaii, linewidth = 0.2, colour = "grey10", fill = "#5F8575") +
+  theme_classic() +
+  theme(panel.background = element_rect(fill = "#000080"))
+```
+
+```{r}
+# get bathymetry data
+bathy_data = getNOAA.bathy(lon1 = hawaii_bbox$xmin, lon2 = hawaii_bbox$xmax,
+                           lat1 = hawaii_bbox$ymin, lat2 = hawaii_bbox$ymax, 
+                           resolution = 1)
+```
+
+```{r}
+bf = fortify.bathy(bathy_data) 
+
+baseplot <- ggplot() +
+  geom_contour(data = bf, 
+               aes(x=x, y=y, z=z),
+               breaks=c(-100),
+               linewidth=c(0.3),
+               colour="grey 90", alpha = 0.65) +
+  with_outer_glow(
+   geom_sf(data = lines, aes(colour = tag_ident), alpha = 0.2, linewidth = 0.1),
+   expand = 2, sigma = 3, colour = "white"
+  ) +
+  geom_sf(data = lines, aes(colour = tag_ident), alpha = 0.7, linewidth = 0.2) +
+  geom_sf(data = hawaii, linewidth = 0.2, colour = NA, fill = "#355E3B") +
+  scale_colour_carto_d(palette = "Vivid") +
+  coord_sf(xlim = c(hawaii_bbox$xmin - 0.5, hawaii_bbox$xmax + 0.5),
+           ylim = c(hawaii_bbox$ymin - 0.5, hawaii_bbox$ymax + 0.5)) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "#064273", colour = NA),
+        legend.position = "none")
+```
+
+```{r}
+img <- readPNG(here::here("Day23/false_killer_whale.png"), native = TRUE)
+whale_img <- rasterGrob(img, interpolate = TRUE)
+
+ggdraw() +
+  draw_plot(baseplot, x = 0.5, y = 0.5, width = 1.1, height = 1.1,
+            hjust = 0.5, vjust = 0.5) +
+  geom_richtext(aes(x = 0.96, y = 0.87),
+                label = "Movement of Hawaiian<br>False Killer Whales",
+                label.colour = NA, fill = NA,
+                colour = "white", size = 4, family = "Dolly",
+                hjust = 1) +
+  annotation_custom(whale_img, xmin = 0.57, xmax = 1.07,
+                    ymin = 0.64, ymax = 0.79) +
+  geom_richtext(aes(x = 0.94, y = 0.62),
+                label = "Pseudorca crassidens",
+                label.colour = NA, fill = NA,
+                colour = "white", size = 2, family = "Dolly",
+                fontface = "italic",
+                hjust = 1) +
+  geom_richtext(aes(x = 0.035, y = 0.2),
+                label = paste0("Despite what the name suggests the<br>false killer whale isn't actually a whale<br>but rather a species of oceanic dolphin.<br><br>The NOAA tracked false killer whales around<br>Hawaii in 2013 and 2017 using satellite tags.<br>The coloured lines show movement of individuals.<br>White lines represent shallow water around islands and atolls,<br>while dark green areas are the larger Hawaiian islands."),
+                label.colour = NA, fill = NA,
+                colour = "white", size = 1, family = "Dolly",
+                hjust = 0, lineheight = 2.5) +
+  geom_richtext(aes(x = 0.035, y = 0.05),
+                label = "Plot: @ldbailey255 | Data: NOAA Fisheries | Image: FAO Cetacean Identification Cards",
+                label.colour = NA, fill = NA,
+                colour = "white", size = 0.75, family = "Dolly",
+                hjust = 0)
+
+ggsave(filename = here::here("./Day23/Day23_movement.png"),
+       height = 5, width = 7)
+```

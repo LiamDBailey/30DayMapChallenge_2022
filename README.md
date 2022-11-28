@@ -154,9 +154,9 @@ Quick Link
 
 ***
 
-### [Day 23 - Movement](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_pop.png) :whale: Movement of false killer whales in Hawaii
+### [Day 23 - Movement](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_movement.png) :whale: Movement of false killer whales in Hawaii
 
-![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_pop.png)
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_movement.png)
 
 ***
 

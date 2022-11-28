@@ -38,6 +38,7 @@ Quick Link
   - Day 16 - Minimal [:volcano: Black and white elevation map of Ngorongoro Crater, Tanzania](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day16/Day16_minimal.png)
   - Day 18 - Blue [:shark: Species distribution map of Oceanic Whitetip using Spilhaus projection](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day18/Day18_blue.png)
   - Day 21 - Kontur Population Dataset [:family: Population map of Melbourne, Australia](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day21/Day21_pop.png)
+  - Day 23 - Movement [:whale: Movement of false killer whales in Hawaii](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_movement.png)
 
 <!-- tocstop -->
 
@@ -150,6 +151,12 @@ Quick Link
 ### [Day 21 - Kontur Population Dataset](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day21/Day21_pop.png) :family: Population map of Melbourne, Australia
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day21/Day21_pop.png)
+
+***
+
+### [Day 23 - Movement](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_pop.png) :whale: Movement of false killer whales in Hawaii
+
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_pop.png)
 
 ***
 

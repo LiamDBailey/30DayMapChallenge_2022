@@ -162,7 +162,7 @@ Quick Link
 
 ***
 
-### [Day 25 - 2 colour](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day25/Day25_2colours.png) 🟩🟦 Elevation and bathymetric map of Kent Island Group, Australia
+### [Day 25 - 2 colour](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day25/Day25_2colour.png) 🟩🟦 Elevation and bathymetric map of Kent Island Group, Australia
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day25/Day25_2colour.png)
 

@@ -42,7 +42,7 @@ kent_grp_bbox <- sf::st_bbox(c(xmin = 147.25,
                                ymax = -39.412), crs = "EPSG:4326")
 
 # Source: 2004. GEODATA COAST 100K 2004. Geoscience Australia, Canberra. http://pid.geoscience.gov.au/dataset/ga/61395
-kent_grp_coast <- sf::st_read(here("Day24/data/tas_coastline.shp")) %>% 
+kent_grp_coast <- sf::st_read(here("Day25/data/tas_coastline.shp")) %>% 
   sf::st_transform("EPSG:4326") %>% 
   sf::st_crop(kent_grp_bbox) %>% 
   group_by(`FNODE_`) %>% 
@@ -63,7 +63,7 @@ Georef bathy data
 ```{r}
 # Source: Georeferenced from Fig. 4 Jordan et al. 2002
 #https://www.researchgate.net/publication/228862583_Habitat_mapping_in_the_Kent_Group_of_islands
-bathy_data_georef <- sf::st_read(here("Day24/data/bathy_polygons_fixed.shp")) %>% 
+bathy_data_georef <- sf::st_read(here("Day25/data/bathy_polygons_fixed.shp")) %>% 
   smoothr::smooth(method = "ksmooth", n = 3)
 ```
 
@@ -71,7 +71,7 @@ Elevation data
 
 ```{r}
 # Source: Tasmania 2m elevation model www.thelist.tas.gov.au
-kent_elev <- stars::read_stars(here("Day24/data/DEM_KentGrp.tif"))
+kent_elev <- stars::read_stars(here("Day25/data/DEM_KentGrp.tif"))
 
 kent_elev_down <- kent_elev %>% 
   stars::st_downsample(10)
@@ -123,8 +123,12 @@ ggdraw() +
                 colour = "white", family = "Plantin",
                 fontface = "bold",
                 label.colour = NA, fill = NA, size = 8) +
-  geom_richtext(aes(x = 0.044, y = 0.615),
+  geom_richtext(aes(x = 0.27, y = 0.81),
                 hjust = 0, label = "Erith Island",
+                colour = "white", family = "Plantin",
+                label.colour = NA, fill = NA, size = 4) +
+  geom_richtext(aes(x = 0.044, y = 0.365),
+                hjust = 0, label = "Dover Island",
                 colour = "white", family = "Plantin",
                 label.colour = NA, fill = NA, size = 4) +
   geom_richtext(aes(x = 0.875, y = 0.7),

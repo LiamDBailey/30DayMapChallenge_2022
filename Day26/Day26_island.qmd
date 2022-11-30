@@ -1,0 +1,119 @@
+---
+title: "Day26_island"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(showtext) # Custom fonts
+library(ggtext) # Fonts
+library(htmltools) # Custom html for text
+library(here) #Relative paths
+library(htmltools) #Adjust CSS style of text
+
+showtext::showtext_auto()
+showtext_opts(dpi = 600) # Makes sure the text is same res as plot
+## FONTS FROM https://fonts.adobe.com/fonts/hidden-treasures#fonts-section
+sysfonts::font_add(family = "Plantin",
+                   regular = "Plantin_regular.otf",
+                   italic = "Plantin_italic.otf",
+                   bold = "Plantin_bold.otf")
+```
+
+```{r}
+target_crs <- "EPSG:8058"
+my_bbox <- sf::st_bbox(c(xmin = 115.404628, ymin = -32.034931,
+                         xmax = 115.564445, ymax = -31.961559), crs = "EPSG:4326")
+
+# Source: 2004. GEODATA COAST 100K 2004. Geoscience Australia, Canberra. http://pid.geoscience.gov.au/dataset/ga/61395
+island <- sf::st_read(here("Day26/data/WA_coast.shp")) %>% 
+  sf::st_transform("EPSG:4326") %>% 
+  sf::st_crop(my_bbox) %>% 
+  summarise() %>% 
+  sf::st_cast("POLYGON") %>% 
+  sf::st_make_valid() %>% 
+  sf::st_transform(target_crs)
+
+my_bbox_lordhowe <- sf::st_bbox(island)
+
+ggplot() +
+  geom_sf(data = island, fill = "green")
+```
+
+Create expanding lines around each island.
+
+```{r}
+buffers <- purrr::map_df(.x = c(40, 100, 170, 270, 400) * 1.5,
+                         .f = ~{
+                           
+                           island %>% 
+                             sf::st_buffer(dist = .x) %>% 
+                             mutate(distance = as.numeric(.x))
+                           
+                         })
+
+ggplot() +
+  geom_sf(data = buffers, aes(linewidth = distance,
+                              colour = as.factor(distance)),
+          fill = NA) +
+  geom_sf(data = island, linewidth = 0.5, colour = "black",
+          fill = "white") +
+  scale_colour_manual(values = sapply(seq(0, 0.5, length.out = 5), FUN = function(x){
+    colorspace::lighten("#89A4B2", amount = x)
+  })) +
+  scale_linewidth_continuous(range = c(0.1, 0.8), trans = "log") +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+```{r}
+coast <- "#c53531"
+water <- "#037ea2"
+land  <- "#fdb724"
+
+baseplot <- ggplot() +
+  geom_sf(data = buffers, aes(linewidth = distance,
+                              colour = as.factor(distance)),
+          fill = NA) +
+  geom_sf(data = island, linewidth = 0.5, colour = coast,
+          fill = land) +
+  scale_colour_manual(values = sapply(seq(0, 0.5, length.out = 5), FUN = function(x){
+    colorspace::lighten(water, amount = x)
+  })) +
+  scale_linewidth_continuous(range = c(0.05, 0.75), trans = "log") +
+  scale_x_continuous(expand = c(0.2, 0.2)) +
+  scale_y_continuous(expand = c(0.2, 0.2)) +
+  coord_sf(xlim = my_bbox_lordhowe$xlim,
+           ylim = my_bbox_lordhowe$ylim) +
+  theme_void() +
+  theme(legend.position = "none",
+        panel.grid = element_blank())
+```
+
+```{r}
+
+small_text <- function(...) span(..., style = css(font_family = "Plantin", font_size = "8.5pt"))
+
+ggdraw() +
+  draw_plot(baseplot, x = 0.5, y = 0.5, hjust = 0.5, vjust = 0.5,
+            width = 0.975, height = 0.975) +
+  geom_richtext(aes(x = 0.585, y = 0.575),
+                label = paste("Wadjemup<br>", small_text("(Rottnest Island)")), family = "Plantin",
+                fontface = "bold", colour = "black",
+                label.colour = NA, fill = NA, size = 5, lineheight = 0.75) +
+  geom_richtext(aes(x = 0.985, y = 0.05),
+                label = "@ldbailey255<br>GEODATA COAST 100K 2004. Geoscience Australia, Canberra",
+                hjust = 1, family = "Plantin", colour = "black",
+                label.colour = NA, fill = NA, size = 2, lineheight = 1.25)
+
+ggsave(here("Day26/Day26_island.png"), dpi = 600, width = 6, height = 6)
+```
+
+

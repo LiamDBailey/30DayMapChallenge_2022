@@ -1,0 +1,143 @@
+---
+title: "Day27_noise"
+format: html
+editor: visual
+---
+
+# Load packages
+
+```{r}
+#| message: false
+library(tidyverse) # Tidyverse pkgs
+library(sf) # Working with spatial objects
+library(osmdata) # Download OSM data
+library(cowplot) # Combine plots
+library(ggtext) # Fonts
+library(htmltools) # Custom html for text
+library(here) #Relative paths
+library(stars) #Work with rasters
+```
+
+```{r}
+# Source: https://www.bts.gov/geospatial/national-transportation-noise-map
+noise_raster <- stars::read_stars(here("Day27/data/NYC_noise_raster.tif"))
+# noise_raster_down <- stars::st_downsample(noise_raster, n = 5)
+noise_raster_down <- noise_raster
+noise_raster_down$NYC_noise_raster.tif[noise_raster_down$NYC_noise_raster.tif < 40] <- NA
+
+noise_raster_contour <- stars::st_contour(noise_raster_down, na.rm = TRUE, breaks = seq(40, 75, 5))
+```
+
+```{r}
+#SOURCE: https://opendata.cityofnewyork.us/
+NYC <- sf::read_sf(here("Day27/data/NYC_coast.shp")) %>% 
+  sf::st_transform(sf::st_crs(noise_raster_down)) %>% 
+  sf::st_crop(noise_raster_down)
+
+#SOURCE: https://njogis-newjersey.opendata.arcgis.com/datasets/newjersey::county-boundaries-of-nj-hosted-3857/about
+NJ <- sf::read_sf(here("Day27/data/NJ_coast.shp")) %>% 
+  sf::st_transform(sf::st_crs(noise_raster_down)) %>% 
+  sf::st_crop(noise_raster_down)
+
+#SOURCE: https://geodata.lib.utexas.edu/catalog/nyu-2451-34507
+NJ_waterways <- sf::read_sf(here("Day27/data/NJ_waterways.shp")) %>% 
+  sf::st_transform(sf::st_crs(noise_raster_down))
+
+both_coast <- NYC %>% 
+  bind_rows(NJ) %>% 
+  sf::st_difference(NJ_waterways)
+```
+
+```{r}
+baseplot <- ggplot() +
+  geom_sf(data = both_coast, fill = "#feebe2", colour = NA) +
+  geom_sf(data = noise_raster_contour, aes(fill = NYC_noise_raster.tif),
+          colour = NA) +
+  scale_fill_manual(values = c(
+    "#feebe2",
+    "#fdd0ce",
+    "#fbb4b9",
+    "#f98ead",
+    "#f768a1",
+    "#de4196",
+    "#c51b8a",
+    "#a00e81",
+    "#7a0177"),
+    breaks = c("[40, 45)", "[45,50)", "[50,55)", "[55,60)", "[60,65)", "[65,70)", "[70,75)", "[75,Inf)")) +
+  coord_sf(expand = FALSE) +
+  theme_void() +
+  theme(legend.position = "none",
+        panel.background = element_rect(fill = "#e5e5e5", colour = NA))
+```
+
+```{r}
+width <- 6
+ybar_lim <- c(0.95, 1.25)
+xbar_lim <- c(5 - width/2, 5 + width/2)
+breaks <- 10
+xbar_breaks <- seq(xbar_lim[1], xbar_lim[2], length.out = breaks)
+
+scale_data <- purrr::map_df(1:(length(xbar_breaks) - 1),
+                            .f = ~{
+                              data.frame(x = xbar_breaks[.x],
+                                         xend = xbar_breaks[.x + 1],
+                                         y = ybar_lim[1],
+                                         yend = ybar_lim[2],
+                                         i = .x)
+                            })
+
+text_data <- scale_data %>% 
+  slice(-1) %>% 
+  mutate(label = seq(40, 75, length.out = n()))
+
+xlim <- c(0, 10)
+ylim <- c(0, 1.7)
+
+(legend <- ggplot() +
+    geom_rect(aes(xmin = xlim[1], xmax = xlim[2],
+                  ymin = ylim[1], ymax = ylim[2]),
+              colour = NA, fill = "white") +
+    geom_rect(data = scale_data,
+              aes(xmin = x, xmax = xend,
+                  ymin = y, ymax = yend, fill = i),
+              colour = "white", linewidth = 1) +
+    geom_text(data = text_data,
+              aes(x = x, y = yend + 0.15,
+                  label = label),
+              colour = "black", size = 3) +
+    geom_text(aes(x = 10, y = 0.8),
+              label = "NOISE INTENSITY (dB)", size = 2.75) +
+    scale_x_continuous(limits = xlim, expand = c(0, 0)) +
+    scale_y_continuous(limits = ylim, expand = c(0, 0)) +
+    scale_fill_gradientn(colours = c("#feebe2",
+                                     "#fdd0ce",
+                                     "#fbb4b9",
+                                     "#f98ead",
+                                     "#f768a1",
+                                     "#de4196",
+                                     "#c51b8a",
+                                     "#a00e81",
+                                     "#7a0177")) +
+    coord_polar(start = 3.14) +
+    theme_void() +
+    theme(panel.background = element_blank(),
+          plot.background = element_blank(),
+          legend.position = "none"))
+```
+
+```{r}
+output <- ggdraw() +
+  draw_plot(baseplot, x = 0.5, y = 0.5, hjust = 0.5, vjust = 0.5,
+            width = 1.15, height = 1.15) +
+  draw_plot(legend, x = 0.85, y = 0.2, vjust = 0.5, hjust = 0.5,
+            width = 0.4, height = 0.4)
+
+## Add text in Photoshop so that we can include white stroke
+## around fontawesome
+ggsave(plot = output,
+       here("Day27/Day27_noise_raw.png"), dpi = 600, width = 8, height = 6)
+```
+
+
+
+

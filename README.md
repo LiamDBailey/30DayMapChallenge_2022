@@ -40,7 +40,8 @@ Quick Link
   - Day 21 - Kontur Population Dataset [:family: Population map of Melbourne, Australia](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day21/Day21_pop.png)
   - Day 23 - Movement [:whale: Movement of false killer whales in Hawaii](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day23/Day23_movement.png)
   - Day 25 - Movement [🟩🟦 Elevation and bathymetric map of Kent Island Group, Australia](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day25/Day25_2colour.png)  
-  - Day 26 - Island [:desert_island: Map of Wadjemup (Rottnest Island), Western Australia](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day26/Day26_island.png)  
+  - Day 26 - Island [:desert_island: Map of Wadjemup (Rottnest Island), Western Australia](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day26/Day26_island.png)
+  - Day 27 - Music/Noise [🔊 NYC Noise pollution map](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day27/Day27_noise.png)  
   
 <!-- tocstop -->
 
@@ -171,6 +172,12 @@ Quick Link
 ### [Day 26 - Island](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day26/Day26_island.png) :desert_island: Map of Wadjemup (Rottnest Island), Western Australia
 
 ![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day26/Day26_island.png)
+
+***
+
+### [Day 27 - Music/Noise](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day27/Day27_noise.png) 🔊 NYC Noise pollution map
+
+![](https://github.com/LiamDBailey/30DayMapChallenge_2022/blob/main/Day27/Day27_noise.png)
 
 ***
 
